@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Calendar from './pages/Calendar'
 import Students from './pages/Students'
+import StudentDetail from './pages/StudentDetail'
 import Materials from './pages/Materials'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/students" element={<Students />} />
+          <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/materials" element={<Materials />} />
         </Route>
       </Routes>
