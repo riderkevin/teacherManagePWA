@@ -12,7 +12,7 @@ import {
   Folder,
   FileText,
 } from 'lucide-react'
-import { getAllMaterials, addMaterial, updateMaterial, deleteMaterial } from '../db/database'
+import { getAllMaterials, addMaterial, updateMaterial, deleteMaterial } from '../api'
 import type { Material, MaterialCategory } from '../types'
 import { MATERIAL_CATEGORIES } from '../types'
 import MaterialModal from '../components/MaterialModal'

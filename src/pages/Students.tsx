@@ -7,12 +7,11 @@ import {
   Users,
   Loader2,
   ExternalLink,
-  ChevronRight,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { getAllStudents, addStudent, updateStudent, deleteStudent } from '../db/database'
-import { getStudentDisplayName } from '../types'
-import type { Student, StudentStatus } from '../types'
+import { getAllStudents, getAllLessons, addStudent, updateStudent, deleteStudentCascade, getLessonsByStudentId } from '../api'
+import { getStudentDisplayName, computeProgress } from '../types'
+import type { Student, StudentStatus, Lesson } from '../types'
 import StudentModal from '../components/StudentModal'
 
 // ── 状态分组顺序 ──
@@ -36,13 +35,19 @@ const STATUS_STYLE: Record<StudentStatus, { bg: string; text: string; dot: strin
 export default function StudentsPage() {
   const navigate = useNavigate()
   const [students, setStudents] = useState<Student[] | null>(null)
+  const [allLessons, setAllLessons] = useState<Lesson[]>([])
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null)
+  const [deleteLessonCount, setDeleteLessonCount] = useState(0)
 
   // 加载数据
-  const load = () => getAllStudents().then(setStudents)
+  const load = async () => {
+    const [s, l] = await Promise.all([getAllStudents(), getAllLessons()])
+    setStudents(s)
+    setAllLessons(l)
+  }
 
   useEffect(() => {
     load()
@@ -110,13 +115,25 @@ export default function StudentsPage() {
   // 删除
   const handleDelete = async () => {
     if (!deleteTarget?.id) return
-    await deleteStudent(deleteTarget.id)
+    await deleteStudentCascade(deleteTarget.id)
     setDeleteTarget(null)
+    setDeleteLessonCount(0)
     load()
   }
 
   // 计算总人数（用于顶部统计）
   const totalCount = grouped.reduce((sum, g) => sum + g.items.length, 0)
+
+  // 学生ID→课程列表映射（用于计算进度）
+  const studentLessonsMap = useMemo(() => {
+    const map = new Map<number, Lesson[]>()
+    for (const l of allLessons) {
+      const arr = map.get(l.studentId) || []
+      arr.push(l)
+      map.set(l.studentId, arr)
+    }
+    return map
+  }, [allLessons])
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -226,7 +243,9 @@ export default function StudentsPage() {
                           {displayName}
                         </button>
                       </td>
-                      <td className="px-5 py-3 text-slate-600">{s.progress || '-'}</td>
+                      <td className="px-5 py-3 text-slate-600 text-xs">
+                        {computeProgress(studentLessonsMap.get(s.id!) || [])}
+                      </td>
                       <td className="px-5 py-3">
                         {s.docLink ? (
                           <a
@@ -259,7 +278,11 @@ export default function StudentsPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => setDeleteTarget(s)}
+                            onClick={async () => {
+                              const lessons = await getLessonsByStudentId(s.id!)
+                              setDeleteLessonCount(lessons.length)
+                              setDeleteTarget(s)
+                            }}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                             title="删除"
                           >
@@ -297,15 +320,24 @@ export default function StudentsPage() {
       {/* 删除确认 */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setDeleteTarget(null)} />
+          <div className="fixed inset-0 bg-black/40" onClick={() => { setDeleteTarget(null); setDeleteLessonCount(0) }} />
           <div className="relative z-10 w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
             <h4 className="text-lg font-semibold text-slate-900">确认删除</h4>
             <p className="mt-2 text-sm text-slate-500">
-              确定要删除 <span className="font-medium text-slate-900">{getStudentDisplayName(deleteTarget)}</span> 吗？此操作不可撤销。
+              确定要删除 <span className="font-medium text-slate-900">{getStudentDisplayName(deleteTarget)}</span> 吗？
             </p>
+            {deleteLessonCount > 0 && (
+              <p className="mt-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                ⚠️ 该学生关联了 <span className="font-semibold">{deleteLessonCount} 节</span>课程记录，
+                删除学生后这些课程也会一并删除，此操作不可撤销。
+              </p>
+            )}
+            {deleteLessonCount === 0 && (
+              <p className="mt-2 text-sm text-slate-400">此操作不可撤销。</p>
+            )}
             <div className="mt-5 flex justify-end gap-3">
               <button
-                onClick={() => setDeleteTarget(null)}
+                onClick={() => { setDeleteTarget(null); setDeleteLessonCount(0) }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 取消

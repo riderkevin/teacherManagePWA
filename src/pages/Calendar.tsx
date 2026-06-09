@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Plus,
   Pencil,
@@ -8,6 +9,7 @@ import {
   Clock,
   User,
   Hourglass,
+  DollarSign,
 } from 'lucide-react'
 import {
   getAllLessons,
@@ -15,7 +17,7 @@ import {
   updateLesson,
   deleteLesson,
   getLessonMonths,
-} from '../db/database'
+} from '../api'
 import type { Lesson } from '../types'
 import LessonModal from '../components/LessonModal'
 
@@ -26,7 +28,14 @@ const STATUS_STYLE: Record<string, string> = {
   '放鸽子': 'bg-slate-100 text-slate-500',
 }
 
+const LESSON_TYPE_STYLE: Record<string, string> = {
+  '试听课': 'bg-amber-50 text-amber-700',
+  '正式课单节': 'bg-blue-50 text-blue-700',
+  '正式课多节': 'bg-emerald-50 text-emerald-700',
+}
+
 export default function CalendarPage() {
+  const navigate = useNavigate()
   const [lessons, setLessons] = useState<Lesson[] | null>(null)
   const [months, setMonths] = useState<string[]>([])
   const [selectedMonth, setSelectedMonth] = useState<string>('')
@@ -95,7 +104,7 @@ export default function CalendarPage() {
   // 解析 startTime 提取日期部分 MM/DD
   const dateOnly = (startTime: string) => {
     const parts = startTime.split(' ')
-    const [y, m, d] = (parts[0] || '').split('/')
+    const [, m, d] = (parts[0] || '').split('/')
     return `${m}/${d}`
   }
 
@@ -193,18 +202,26 @@ export default function CalendarPage() {
             {items.map((lesson) => (
               <div
                 key={lesson.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow group"
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow group cursor-pointer"
+                onClick={() => navigate(`/students/${lesson.studentId}`)}
               >
                 {/* 标题 + 状态 */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <h4 className="text-sm font-semibold text-slate-900 truncate">
                     {lesson.title}
                   </h4>
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[lesson.status]}`}
-                  >
-                    {lesson.status}
-                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${LESSON_TYPE_STYLE[lesson.lessonType] || 'bg-slate-50 text-slate-500'}`}
+                    >
+                      {lesson.lessonType || '正式课单节'}
+                    </span>
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[lesson.status]}`}
+                    >
+                      {lesson.status}
+                    </span>
+                  </div>
                 </div>
 
                 {/* 详细信息 */}
@@ -219,12 +236,27 @@ export default function CalendarPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Hourglass className="h-3.5 w-3.5 text-slate-400" />
-                    <span>{lesson.duration} 小时</span>
+                    <span>{lesson.duration} 课时</span>
+                    {lesson.income > 0 && (
+                      <>
+                        <span className="text-slate-300">|</span>
+                        <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="text-emerald-600 font-medium">¥{lesson.income}</span>
+                      </>
+                    )}
                   </div>
+                  {lesson.lessonType === '正式课多节' && lesson.packageLabel && (
+                    <div className="text-xs text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5 inline-block">
+                      {lesson.packageLabel}
+                    </div>
+                  )}
                 </div>
 
                 {/* 操作按钮 */}
-                <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  className="flex items-center justify-end gap-1 mt-3 pt-3 border-t border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     onClick={() => {
                       setEditingLesson(lesson)

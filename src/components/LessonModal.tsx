@@ -1,14 +1,35 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { X, Search, ChevronDown } from 'lucide-react'
-import type { Lesson, LessonStatus, Student } from '../types'
-import { getStudentDisplayName, calcEndTime, extractMonth, extractWeek } from '../types'
-import { getAllStudents } from '../db/database'
+import type { Lesson, LessonStatus, LessonType, Student } from '../types'
+import { getStudentDisplayName, calcEndTime, extractMonth, extractWeek, inferLessonType } from '../types'
+import { getAllStudents, getLessonsByStudentId } from '../api'
 
 // ── 常量 ──
 const STATUS_OPTIONS: LessonStatus[] = ['未上课', '已上课', '放鸽子']
+const LESSON_TYPE_OPTIONS: LessonType[] = ['试听课', '正式课单节', '正式课多节']
+const LESSON_TYPE_STYLE: Record<LessonType, string> = {
+  '试听课': 'bg-amber-50 text-amber-700 border-amber-200',
+  '正式课单节': 'bg-blue-50 text-blue-700 border-blue-200',
+  '正式课多节': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+}
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 15, 30, 45]
+
+/** 计算新课程对应的课时编号后缀（基于已完成的正式课） */
+function computeLessonSuffix(existingLessons: Lesson[], duration: number, excludeLessonId?: number): string {
+  const before = existingLessons
+    .filter((l) => l.status === '已上课' && l.lessonType !== '试听课' && l.id !== excludeLessonId)
+    .reduce((sum, l) => sum + l.duration, 0)
+
+  if (duration === 1) return `课时${before + 1}`
+
+  const numbers: number[] = []
+  for (let i = 0; i < duration; i++) {
+    numbers.push(before + i + 1)
+  }
+  return `课时${numbers.join('、')}`
+}
 
 type LessonFormData = Omit<Lesson, 'id'>
 
@@ -22,6 +43,9 @@ const EMPTY_FORM: LessonFormData = {
   status: '未上课',
   month: '',
   week: '',
+  income: 0,
+  lessonType: '正式课单节',
+  packageLabel: '',
 }
 
 interface Props {
@@ -39,6 +63,7 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
   const [studentSearch, setStudentSearch] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [studentLessons, setStudentLessons] = useState<Lesson[]>([])
 
   // 日期时间拆分
   const [datePart, setDatePart] = useState('')
@@ -64,13 +89,24 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
         setHourPart(h || '14')
         setMinutePart(m || '00')
       }
-      // 找到对应学生
+      // 找到对应学生，并补充课时后缀（旧数据可能没有）
       if (data.studentId) {
-        getAllStudents().then((list) => {
+        Promise.all([
+          getAllStudents(),
+          getLessonsByStudentId(data.studentId),
+        ]).then(([list, existing]) => {
+          setStudentLessons(existing)
           const s = list.find((s) => s.id === data.studentId)
           if (s) {
             setSelectedStudent(s)
             setStudentSearch(getStudentDisplayName(s))
+            // 旧课程标题可能没有课时后缀，补上
+            if (!data.title.includes('-课时')) {
+              const suffix = computeLessonSuffix(existing, data.duration, lesson?.id)
+              // 从旧标题中提取学生名称和课程类型
+              const typeLabel = data.lessonType === '试听课' ? '试听课' : '正式课'
+              setForm((prev) => ({ ...prev, title: `${data.studentName}-${typeLabel}-${suffix}` }))
+            }
           }
         })
       }
@@ -119,11 +155,16 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
 
   // 时长变更
   const handleDurationChange = (val: number) => {
-    const duration = Math.max(0.5, val)
+    const duration = Math.max(1, val)
+    // 同步更新课时编号
+    const excludeId = isEdit ? lesson?.id : undefined
+    const suffix = computeLessonSuffix(studentLessons, duration, excludeId)
+    const baseTitle = form.title.replace(/-课时[\d、]+$/, '')
     setForm((prev) => ({
       ...prev,
       duration,
       endTime: prev.startTime ? calcEndTime(prev.startTime, duration) : prev.endTime,
+      title: `${baseTitle}-${suffix}`,
     }))
   }
 
@@ -143,8 +184,21 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
     })
   }, [students, studentSearch])
 
-  const selectStudent = (s: Student) => {
+  const selectStudent = async (s: Student) => {
     const displayName = getStudentDisplayName(s)
+    const defaultType = inferLessonType(s.status)
+    const defaultIncome = defaultType === '试听课'
+      ? s.trialPrice
+      : defaultType === '正式课单节'
+        ? s.singlePrice
+        : 0
+
+    // 获取该学生已有课程，计算课时编号
+    const existing = isEdit ? await getLessonsByStudentId(s.id!) : await getLessonsByStudentId(s.id!)
+    setStudentLessons(existing)
+    const excludeId = isEdit ? lesson?.id : undefined
+    const suffix = computeLessonSuffix(existing, 1, excludeId)
+
     setSelectedStudent(s)
     setStudentSearch(displayName)
     setDropdownOpen(false)
@@ -152,7 +206,10 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
       ...prev,
       studentId: s.id!,
       studentName: displayName,
-      title: `吉他课-${displayName}`,
+      title: `${displayName}-${defaultType === '试听课' ? '试听课' : '正式课'}-${suffix}`,
+      lessonType: defaultType,
+      income: defaultIncome,
+      packageLabel: '',
     }))
   }
 
@@ -333,31 +390,34 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
 
           {/* 时长 */}
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-slate-700">时长（小时）</span>
+            <span className="text-sm font-medium text-slate-700">时长（小时 / 课时）</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleDurationChange(form.duration - 0.5)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+                onClick={() => handleDurationChange(form.duration - 1)}
+                disabled={form.duration <= 1}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 −
               </button>
               <input
                 type="number"
-                min="0.5"
-                step="0.5"
+                min="1"
+                step="1"
                 value={form.duration}
-                onChange={(e) => handleDurationChange(Number(e.target.value))}
+                onChange={(e) => handleDurationChange(Math.max(1, Number(e.target.value)))}
                 className="w-20 rounded-lg border border-slate-300 px-3 py-2 text-sm text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <button
                 type="button"
-                onClick={() => handleDurationChange(form.duration + 0.5)}
+                onClick={() => handleDurationChange(form.duration + 1)}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
               >
                 +
               </button>
-              <span className="text-sm text-slate-400">小时</span>
+              <span className="text-sm text-slate-400">
+                {form.duration > 0 ? `${form.duration} 课时` : '1 课时'}
+              </span>
             </div>
           </label>
 
@@ -385,6 +445,83 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
               ))}
             </select>
           </label>
+
+          {/* 课程类型 */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">
+              课程类型 <span className="text-red-400">*</span>
+            </label>
+            <div className="flex gap-2">
+              {LESSON_TYPE_OPTIONS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    update('lessonType', t)
+                    // 切换类型时重置收入
+                    if (t === '正式课多节') {
+                      update('income', 0)
+                    } else if (selectedStudent) {
+                      update('income', t === '试听课' ? selectedStudent.trialPrice : selectedStudent.singlePrice)
+                    }
+                  }}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    form.lessonType === t
+                      ? LESSON_TYPE_STYLE[t] + ' border-current'
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 正式课多节：套餐标签 */}
+          {form.lessonType === '正式课多节' && (
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">套餐标签</span>
+              <input
+                type="text"
+                value={form.packageLabel}
+                onChange={(e) => update('packageLabel', e.target.value)}
+                placeholder="如：正式课一期-10节一付"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <p className="text-xs text-slate-400">记录该节课所属的套餐周期</p>
+            </label>
+          )}
+
+          {/* 课时收入（试听课/正式课单节 且 已上课时显示） */}
+          {form.lessonType !== '正式课多节' && form.status === '已上课' && (
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">
+                课时收入（元）
+                {selectedStudent && form.lessonType === '试听课' && selectedStudent.trialPrice > 0 && (
+                  <span className="text-xs text-slate-400 ml-1">（试听课价格 ¥{selectedStudent.trialPrice}）</span>
+                )}
+                {selectedStudent && form.lessonType === '正式课单节' && selectedStudent.singlePrice > 0 && (
+                  <span className="text-xs text-slate-400 ml-1">（单次价格 ¥{selectedStudent.singlePrice}）</span>
+                )}
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                value={form.income || 0}
+                onChange={(e) => update('income', Number(e.target.value))}
+                placeholder="0"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </label>
+          )}
+
+          {/* 正式课多节时：提示收入在缴费记录中管理 */}
+          {form.lessonType === '正式课多节' && form.status === '已上课' && (
+            <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-500">
+              💡 正式课多节的收入在「学生档案 → 缴费记录」中统一管理，此处不计收入。
+            </div>
+          )}
 
           {/* 底部按钮 */}
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">

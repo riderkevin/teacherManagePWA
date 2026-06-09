@@ -17,7 +17,6 @@ const EMPTY_FORM: StudentFormData = {
   wechatId: '',
   isNotSelf: false,
   actualStudentName: '',
-  progress: '',
   docLink: '',
   location: '',
   trialPrice: 0,
@@ -176,16 +175,7 @@ export default function StudentModal({ student, onSave, onClose }: Props) {
               </label>
             </div>
 
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">目前进度（仅算正式课）</span>
-              <input
-                type="text"
-                value={form.progress}
-                onChange={(e) => update('progress', e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="如：第8课 - CAGED系统"
-              />
-            </label>
+            {/* 目前进度由上课记录自动计算，不再手动填写 */}
 
             {/* 价格 */}
             <div className="grid gap-4 sm:grid-cols-4">

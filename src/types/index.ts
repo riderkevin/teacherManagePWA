@@ -5,8 +5,8 @@ export interface Student {
   wechatId: string
   isNotSelf: boolean // 非本人上课
   actualStudentName: string // 非本人上课时填的学生名称
-  // 计算字段：学生名称 = isNotSelf ? actualStudentName : wechatNickname
-  progress: string // 目前进度（仅算正式课）
+  // 学生名称 = isNotSelf ? actualStudentName : wechatNickname（计算字段，不可编辑）
+  // 目前进度 = 根据上课记录自动计算（计算字段，不可编辑）
   docLink: string // 文档链接
   location: string // 上课地点
   trialPrice: number // 试听课价格
@@ -46,6 +46,42 @@ export interface Lesson {
   status: LessonStatus
   month: string            // 月份，如 2026年6月
   week: string             // 周，如 2026年6月第1周
+  income: number           // 课时收入（元），试听课/正式课单节时填写，正式课多节为0
+  lessonType: LessonType   // 课程类型
+  packageLabel: string     // 正式课多节时的套餐标签，如"正式课一期-10节一付"；其他为空
+}
+
+/** 课程类型 */
+export type LessonType = '试听课' | '正式课单节' | '正式课多节'
+
+/** 根据学生状态推断默认课程类型 */
+export function inferLessonType(status: StudentStatus): LessonType {
+  if (status === '仅上试听课') return '试听课'
+  if (status === '正式课单节一付') return '正式课单节'
+  return '正式课多节'
+}
+
+/** 课程附件（关联到具体课程记录的课件） */
+export interface LessonMaterial {
+  id?: number
+  lessonId: number
+  materialId?: number    // 从课件库选择的条目ID
+  text: string           // 文字内容（手写备注 或 课件库条目的content副本）
+  fileName: string       // 上传的文件名
+  fileData: string       // 上传的文件 base64 dataURL
+  fileLink: string       // 飞书链接或其他URL
+}
+
+/** 缴费记录 */
+export interface Payment {
+  id?: number
+  studentId: number
+  studentName: string
+  date: string            // 缴费日期 YYYY/MM/DD
+  amount: number          // 缴费金额
+  packageLabel: string    // 如 "正式课一期"
+  lessonCount: number     // 节数，如 10
+  notes: string           // 备注
 }
 
 // 课件
@@ -133,4 +169,73 @@ export function parseStartTime(startTime: string): Date {
   const [y, m, d] = datePart.split('/').map(Number)
   const [hh, mm] = timePart.split(':').map(Number)
   return new Date(y, m - 1, d, hh, mm)
+}
+
+/**
+ * 根据上课记录自动计算学生「目前进度」
+ * 规则：
+ * 1. 无上课记录 → "未上课"
+ * 2. 最新一条是试听课 → "仅上试听课"
+ * 3. 最新一条是正式课单节 → "正式课单节-总课时X"
+ * 4. 最新一条是正式课多节 → "正式课多节N期-总课时X"
+ *
+ * 总课时展示逻辑：
+ * - 若每节课都是1课时（duration=1），显示总计数，如 "总课时12"
+ * - 若存在多课时课程（duration>1），则逐课时编号列出，如 "总课时1、2、3、…"
+ */
+export function computeProgress(lessons: Lesson[]): string {
+  if (lessons.length === 0) return '未上课'
+
+  // 按开始时间倒序，取最新一条
+  const sorted = [...lessons].sort((a, b) => b.startTime.localeCompare(a.startTime))
+  const latest = sorted[0]
+
+  // 已上课且非试听课的课程（按时间正序）
+  const formalLessons = [...lessons]
+    .filter((l) => l.status === '已上课' && l.lessonType !== '试听课')
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+
+  if (latest.lessonType === '试听课') return '仅上试听课'
+
+  // 构建总课时显示
+  const totalDisplay = buildTotalDisplay(formalLessons)
+
+  if (latest.lessonType === '正式课单节') {
+    return `正式课单节-${totalDisplay}`
+  }
+
+  if (latest.lessonType === '正式课多节') {
+    const packages = new Set(
+      lessons
+        .filter((l) => l.lessonType === '正式课多节' && l.packageLabel)
+        .map((l) => l.packageLabel),
+    )
+    return `正式课多节${packages.size}期-${totalDisplay}`
+  }
+
+  // 兜底：有课但类型未知
+  return totalDisplay
+}
+
+/** 构建总课时显示文本 */
+function buildTotalDisplay(lessons: Lesson[]): string {
+  if (lessons.length === 0) return '总课时0'
+
+  // 最新一次正式课（列表已按时间正序，取最后一条）
+  const latest = lessons[lessons.length - 1]
+
+  if (latest.duration === 1) {
+    // 单课时：显示总计数
+    const total = lessons.reduce((sum, l) => sum + l.duration, 0)
+    return `总课时${total}`
+  }
+
+  // 多课时：只写最近这一次的课时编号
+  // 计算这一节课之前的累计课时数 + 1 即为其起始编号
+  const before = lessons.slice(0, -1).reduce((sum, l) => sum + l.duration, 0)
+  const numbers: number[] = []
+  for (let i = 0; i < latest.duration; i++) {
+    numbers.push(before + i + 1)
+  }
+  return `总课时${numbers.join('、')}`
 }

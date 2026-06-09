@@ -5,16 +5,22 @@ import {
   Users,
   FolderOpen,
   Music,
+  RefreshCw,
+  LogOut,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const menuItems = [
   { path: '/', label: '首页看板', icon: LayoutDashboard },
   { path: '/calendar', label: '上课日历', icon: CalendarDays },
   { path: '/students', label: '学生档案', icon: Users },
   { path: '/materials', label: '课件汇总', icon: FolderOpen },
+  { path: '/sync', label: '飞书同步', icon: RefreshCw },
 ]
 
 export default function Sidebar() {
+  const { logout } = useAuth()
+
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col bg-[#1E3A5F] text-white">
       {/* Logo */}
@@ -50,7 +56,7 @@ export default function Sidebar() {
       </nav>
 
       {/* 底部用户区 */}
-      <div className="border-t border-white/10 px-5 py-4">
+      <div className="border-t border-white/10 px-5 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-semibold">
             老
@@ -60,6 +66,13 @@ export default function Sidebar() {
             <p className="text-xs text-blue-200/50 truncate">admin@jita.com</p>
           </div>
         </div>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-xs text-blue-100/50 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          退出登录
+        </button>
       </div>
     </aside>
   )
