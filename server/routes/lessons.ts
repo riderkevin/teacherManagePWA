@@ -45,7 +45,30 @@ router.post('/', (req: Request, res: Response) => {
 // 更新课程
 router.put('/:id', (req: Request, res: Response) => {
   const id = Number(req.params.id)
+
+  // 先查旧记录，判断是否需要重算
+  const all = repo.getAllLessons()
+  const old = all.find((l) => l.id === id)
+
   repo.updateLesson(id, req.body)
+
+  // 如果状态、时长、课程类型、学生变了 → 重算该学生所有正式课课时编号
+  const changes = req.body
+  const needRecalc =
+    (changes.status !== undefined && changes.status !== old?.status) ||
+    (changes.duration !== undefined && changes.duration !== old?.duration) ||
+    (changes.lessonType !== undefined && changes.lessonType !== old?.lessonType) ||
+    (changes.studentId !== undefined && changes.studentId !== old?.studentId)
+
+  const studentId = changes.studentId ?? old?.studentId
+  if (needRecalc && studentId) {
+    repo.recalculateLessonTitles(studentId)
+    // 如果切换到另一个学生，旧学生的也需要重算
+    if (changes.studentId && old?.studentId && old.studentId !== changes.studentId) {
+      repo.recalculateLessonTitles(old.studentId)
+    }
+  }
+
   res.json({ ok: true })
 })
 

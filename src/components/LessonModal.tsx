@@ -491,7 +491,26 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
             <span className="text-sm font-medium text-slate-700">当前状态</span>
             <select
               value={form.status}
-              onChange={(e) => update('status', e.target.value as LessonStatus)}
+              onChange={(e) => {
+                const newStatus = e.target.value as LessonStatus
+                update('status', newStatus)
+                // 状态变更时更新标题中的课时编号
+                if (form.lessonType !== '试听课') {
+                  const excludeId = isEdit ? lesson?.id : undefined
+                  if (newStatus === '放鸽子') {
+                    update('title', `${form.studentName}-正式课`)
+                  } else {
+                    const suffix = computeLessonSuffix(
+                      studentLessons.map((l) =>
+                        l.id === (isEdit ? lesson?.id : undefined) ? { ...l, status: newStatus } : l
+                      ),
+                      form.duration,
+                      excludeId
+                    )
+                    update('title', `${form.studentName}-正式课-${suffix}`)
+                  }
+                }
+              }}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               {STATUS_OPTIONS.map((s) => (

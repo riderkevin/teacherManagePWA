@@ -219,6 +219,56 @@ export function deleteLesson(id: number): void {
   db.prepare('DELETE FROM lessons WHERE id = ?').run(id)
 }
 
+/** 重算某学生所有正式课的课时编号（按时间正序累积） */
+export function recalculateLessonTitles(studentId: number): void {
+  const lessons = db.prepare(
+    'SELECT * FROM lessons WHERE studentId = ? ORDER BY startTime ASC'
+  ).all(studentId) as any[]
+
+  // 按 studentName（取第一条课程的 studentName）
+  const studentName = lessons.length > 0 ? lessons[0].studentName : ''
+
+  let cumulativeCompleted = 0 // 已上课正式课累计课时数
+  const updateStmt = db.prepare('UPDATE lessons SET title = ? WHERE id = ?')
+
+  for (const l of lessons) {
+    if (l.lessonType === '试听课') {
+      // 试听课不加课时编号
+      const title = `${studentName}-试听课`
+      if (l.title !== title) updateStmt.run(title, l.id)
+      continue
+    }
+
+    // 正式课
+    if (l.status === '放鸽子') {
+      // 放鸽子不编号，不计入累计
+      const title = `${studentName}-正式课`
+      if (l.title !== title) updateStmt.run(title, l.id)
+      continue
+    }
+
+    // 已上课 / 未上课 的正式课：计算课时编号
+    const before = cumulativeCompleted
+    let suffix: string
+    if (l.duration === 1) {
+      suffix = `课时${before + 1}`
+    } else {
+      const nums: number[] = []
+      for (let i = 0; i < l.duration; i++) {
+        nums.push(before + i + 1)
+      }
+      suffix = `课时${nums.join('、')}`
+    }
+    const title = `${studentName}-正式课-${suffix}`
+    if (l.title !== title) updateStmt.run(title, l.id)
+
+    // 已上课才计入累计
+    if (l.status === '已上课') {
+      cumulativeCompleted += l.duration
+    }
+  }
+}
+
 // ═══════════════════════════════════════════
 // 统计相关
 // ═══════════════════════════════════════════
