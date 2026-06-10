@@ -6,6 +6,7 @@ interface StatCardProps {
   subtitle?: string
   icon: LucideIcon
   color?: 'blue' | 'green' | 'amber' | 'red'
+  onClick?: () => void
 }
 
 const colorMap: Record<string, { bg: string; icon: string }> = {
@@ -15,11 +16,16 @@ const colorMap: Record<string, { bg: string; icon: string }> = {
   red: { bg: 'bg-red-50', icon: 'text-red-600' },
 }
 
-export default function StatCard({ title, value, subtitle, icon: Icon, color = 'blue' }: StatCardProps) {
+export default function StatCard({ title, value, subtitle, icon: Icon, color = 'blue', onClick }: StatCardProps) {
   const c = colorMap[color] || colorMap.blue
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div
+      onClick={onClick}
+      className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${
+        onClick ? 'cursor-pointer hover:shadow-md hover:border-slate-300 transition-all' : ''
+      }`}
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-sm text-slate-500">{title}</p>
