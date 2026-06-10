@@ -215,6 +215,7 @@ export default function Dashboard() {
           subtitle="待上课"
           icon={BookOpen}
           color="blue"
+          onClick={() => navigate('/calendar')}
         />
         <StatCard
           title="本周课时"
