@@ -2,8 +2,18 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyLessons, getAllMyMaterials, getFileDownloadUrl, getMaterialFileUrl, previewFile } from '../../api/client'
+import { getMyLessons, getAllMyMaterials, previewFile, API_BASE } from '../../api/client'
+import Taro from '@tarojs/taro'
 import '../../app.scss'
+
+function getFileDataUrl(id: number) {
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/file-data/${id}?openid=${encodeURIComponent(openid)}`
+}
+function getMaterialFileDataUrl(id: number) {
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/material-file-data/${id}?openid=${encodeURIComponent(openid)}`
+}
 
 export default function MaterialsPage() {
   const [state, setState] = useState<AppState>({
@@ -68,19 +78,19 @@ export default function MaterialsPage() {
 
   // 处理课件点击
   const handleMatClick = (mat: any) => {
-    // 本地上传文件 → 预览
+    // 本地上传文件 → JSON接口预览
     if (mat.fileData) {
-      previewFile(getFileDownloadUrl(mat.id), mat.fileName)
+      previewFile(getFileDataUrl(mat.id), mat.fileName)
       return
     }
-    // fileLink 是 base64 数据（旧数据格式）→ 也走文件预览
+    // fileLink 是 base64 数据（旧数据格式）→ JSON接口预览
     if (mat.fileLink && mat.fileLink.startsWith('data:')) {
-      previewFile(getFileDownloadUrl(mat.id), mat.fileName)
+      previewFile(getFileDataUrl(mat.id), mat.fileName)
       return
     }
-    // 课件库关联（无本地文件但有 materialId）→ 从课件库下载
+    // 课件库关联（无本地文件但有 materialId）→ 从课件库JSON接口
     if (mat.materialId && (!mat.fileLink || mat.fileLink.startsWith('data:'))) {
-      previewFile(getMaterialFileUrl(mat.materialId), mat.fileName || '课件')
+      previewFile(getMaterialFileDataUrl(mat.materialId), mat.fileName || '课件')
       return
     }
     // HTTP链接 → 复制

@@ -211,6 +211,38 @@ function wxFileAuth(req: Request, res: Response, next: Function) {
   next()
 }
 
+// ── 获取附件文件数据（JSON格式，避免二进制下载兼容问题）──
+router.get('/file-data/:id', wxFileAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
+  const id = Number(req.params.id)
+
+  const row = db.prepare('SELECT * FROM lesson_materials WHERE id = ?').get(id) as any
+  if (!row) return res.status(404).json({ error: '文件不存在' })
+
+  const lesson = db.prepare('SELECT id FROM lessons WHERE id = ? AND studentId = ?').get(row.lessonId, studentId)
+  if (!lesson) return res.status(403).json({ error: '无权访问' })
+
+  const source = row.fileData || row.fileLink || ''
+  if (!source.startsWith('data:')) return res.status(404).json({ error: '无文件内容' })
+
+  const matches = source.match(/^data:([^;]+);base64,(.+)$/)
+  if (!matches) return res.status(400).json({ error: '文件格式错误' })
+
+  res.json({ mimeType: matches[1], fileName: row.fileName || 'file', base64: matches[2] })
+})
+
+// ── 获取课件库文件数据（JSON格式）──
+router.get('/material-file-data/:id', wxFileAuth, (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  const row = db.prepare('SELECT * FROM materials WHERE id = ?').get(id) as any
+  if (!row?.fileLink?.startsWith('data:')) return res.status(404).json({ error: '文件不存在' })
+
+  const matches = (row.fileLink as string).match(/^data:([^;]+);base64,(.+)$/)
+  if (!matches) return res.status(400).json({ error: '文件格式错误' })
+
+  res.json({ mimeType: matches[1], fileName: row.fileName || 'file', base64: matches[2] })
+})
+
 // ── 下载附件文件 ──
 router.get('/file/:id', wxFileAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId

@@ -92,43 +92,56 @@ export async function getAllMyMaterials() {
   return apiRequest<any[]>('/api/wx/materials')
 }
 
-// 获取文件下载链接（课程附件），附带 openid 用于鉴权
+// 获取文件JSON接口（课程附件），附带 openid 用于鉴权
+function getFileDataUrl(materialId: number): string {
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/file-data/${materialId}?openid=${encodeURIComponent(openid)}`
+}
+
+// 获取课件库文件JSON接口
+function getMaterialFileDataUrl(materialId: number): string {
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/material-file-data/${materialId}?openid=${encodeURIComponent(openid)}`
+}
+
+// 获取文件下载链接（用于复制到浏览器）
 export function getFileDownloadUrl(materialId: number): string {
   const openid = Taro.getStorageSync('wx_openid') || ''
   return `${API_BASE}/api/wx/file/${materialId}?openid=${encodeURIComponent(openid)}`
 }
 
-// 获取课件库文件下载链接，附带 openid 用于鉴权
 export function getMaterialFileUrl(materialId: number): string {
   const openid = Taro.getStorageSync('wx_openid') || ''
   return `${API_BASE}/api/wx/material-file/${materialId}?openid=${encodeURIComponent(openid)}`
 }
 
-// 预览/下载文件（request下载 + openDocument预览，绕过downloadFile的IP限制）
+// 预览文件：通过JSON接口获取base64 → 写临时文件 → openDocument打开
 export async function previewFile(url: string, fileName?: string) {
-  const fs = Taro.getFileSystemManager()
-  const tmpPath = `${Taro.env.USER_DATA_PATH}/${fileName || 'file'}`
-
   try {
-    // 用 request 下载（支持IP），写入临时文件后用 openDocument 预览
-    const res = await Taro.request({
-      url,
-      method: 'GET',
-      responseType: 'arraybuffer',
-    })
-    if (res.statusCode === 200 && res.data) {
-      fs.writeFileSync(tmpPath, res.data as ArrayBuffer, 'binary')
-      await Taro.openDocument({ filePath: tmpPath, showMenu: true })
-      return
-    }
-    throw new Error('下载失败')
+    // 从 JSON 接口获取文件数据
+    const res: any = await apiRequest(url)
+    if (!res || !res.base64) throw new Error('无文件数据')
+
+    const fs = Taro.getFileSystemManager()
+    // 用 fileName + 扩展名作为临时文件名
+    const ext = res.mimeType?.split('/')[1] || 'bin'
+    const safeName = (res.fileName || fileName || 'file').replace(/[^a-zA-Z0-9._一-鿿-]/g, '_')
+    const tmpPath = `${Taro.env.USER_DATA_PATH}/${safeName}.${ext}`
+
+    // base64 → ArrayBuffer → 写文件
+    const base64 = res.base64
+    const buffer = Taro.base64ToArrayBuffer(base64)
+    fs.writeFileSync(tmpPath, buffer)
+
+    await Taro.openDocument({ filePath: tmpPath, showMenu: true })
   } catch (err) {
     console.error('预览文件失败:', err)
-    // 降级：复制链接在浏览器打开
-    Taro.setClipboardData({ data: url })
+    // 降级：复制二进制下载链接
+    const downloadUrl = url.replace('/file-data/', '/file/').replace('/material-file-data/', '/material-file/')
+    Taro.setClipboardData({ data: downloadUrl })
     Taro.showModal({
       title: '预览失败',
-      content: '小程序内暂不支持预览此文件，下载链接已复制到剪贴板，请在浏览器中粘贴打开。',
+      content: '小程序内暂不支持预览此文件，下载链接已复制，请在浏览器中粘贴打开下载。',
       showCancel: false,
     })
   }
