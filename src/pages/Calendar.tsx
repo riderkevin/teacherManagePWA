@@ -61,7 +61,7 @@ export default function CalendarPage() {
     if (!lessons || !selectedMonth) return []
     const filtered = lessons
       .filter((l) => l.month === selectedMonth)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+      .sort((a, b) => b.startTime.localeCompare(a.startTime))
 
     const map = new Map<string, Lesson[]>()
     for (const l of filtered) {

@@ -271,9 +271,18 @@ export default function Dashboard() {
               <Clock className="h-4 w-4 text-blue-600" />
               最近3天课程
             </h3>
-            <span className="text-xs text-slate-400">
-              共 {upcomingLessons!.length} 节
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-400">
+                共 {upcomingLessons!.length} 节
+              </span>
+              <a
+                href="/calendar"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium no-underline"
+              >
+                查看日历
+                <ChevronRight className="h-3 w-3" />
+              </a>
+            </div>
           </div>
           <div className="divide-y divide-slate-50">
             {upcomingLessons && upcomingLessons.length > 0 ? (
