@@ -286,7 +286,7 @@ export default function Dashboard() {
                   {items.map((lesson) => (
                     <div
                       key={lesson.id}
-                      onClick={() => { window.location.href = '/calendar' }}
+                      onClick={() => navigate('/calendar')}
                       className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50/50 transition-colors text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
