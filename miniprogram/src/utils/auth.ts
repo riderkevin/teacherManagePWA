@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 
 // API 基础地址
-// 开发阶段：WeChat DevTools 中勾选"不校验合法域名"后可直接用 IP
-// 上线后改为：https://your-domain.com
-const SERVER_IP = '124.223.170.68'
-export const API_BASE = `http://${SERVER_IP}`
+// 线上使用 HTTPS 域名
+const SERVER_HOST = 'kevinguitarclass.cn'
+export const API_BASE = `https://${SERVER_HOST}`
 
 export interface AppState {
   openid: string | null

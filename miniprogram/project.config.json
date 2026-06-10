@@ -4,7 +4,7 @@
   "description": "吉他教室 - 学生端",
   "appid": "wx62c193ea5cec12a5",
   "setting": {
-    "urlCheck": false,
+    "urlCheck": true,
     "es6": true,
     "enhance": true,
     "postcss": true,
