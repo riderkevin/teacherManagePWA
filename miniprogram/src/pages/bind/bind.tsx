@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, Input } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
@@ -10,15 +10,17 @@ export default function BindPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [state, setState] = useState<AppState | null>(null)
+  const [isReady, setIsReady] = useState(false)
 
-  useState(() => {
+  useEffect(() => {
     checkLogin().then((s) => {
       setState(s)
+      setIsReady(true)
       if (s.isBound) {
         Taro.switchTab({ url: '/pages/index/index' })
       }
     })
-  })
+  }, [])
 
   const handleBind = async () => {
     if (!code.trim()) {
@@ -53,9 +55,17 @@ export default function BindPage() {
     }
   }
 
+  if (!isReady) {
+    return (
+      <View className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <Text style={{ fontSize: '28rpx', color: '#94A3B8' }}>初始化中…</Text>
+      </View>
+    )
+  }
+
   if (state?.isBound) {
     return (
-      <View className="container" style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <View className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
         <Text style={{ fontSize: '32rpx', color: '#059669' }}>已绑定，正在跳转…</Text>
       </View>
     )
