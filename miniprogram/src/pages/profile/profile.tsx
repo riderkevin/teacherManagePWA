@@ -72,7 +72,7 @@ export default function ProfilePage() {
           <Text style={{ fontSize: '28rpx', fontWeight: 600, color: '#0F172A', marginBottom: '24rpx' }}>
             学习数据
           </Text>
-          <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: '24rpx' }}>
+          <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, textAlign: 'center' }}>
               <Text style={{ fontSize: '40rpx', fontWeight: 700, color: '#1E3A5F' }}>{progress.totalLessons}</Text>
               <Text style={{ fontSize: '24rpx', color: '#94A3B8', display: 'block' }}>已完成(节)</Text>
@@ -81,17 +81,6 @@ export default function ProfilePage() {
               <Text style={{ fontSize: '40rpx', fontWeight: 700, color: '#1E3A5F' }}>{progress.totalHours}</Text>
               <Text style={{ fontSize: '24rpx', color: '#94A3B8', display: 'block' }}>总课时</Text>
             </View>
-            <View style={{ flex: 1, textAlign: 'center' }}>
-              <Text style={{ fontSize: '40rpx', fontWeight: 700, color: progress.currentRemaining > 0 ? '#059669' : '#EF4444' }}>
-                {progress.currentRemaining}
-              </Text>
-              <Text style={{ fontSize: '24rpx', color: '#94A3B8', display: 'block' }}>剩余课时</Text>
-            </View>
-          </View>
-          <View style={{ backgroundColor: '#F8FAFC', borderRadius: '12rpx', padding: '16rpx 20rpx' }}>
-            <Text style={{ fontSize: '24rpx', color: '#64748B' }}>
-              累计缴费：¥{progress.totalPaid}
-            </Text>
           </View>
         </View>
       )}
