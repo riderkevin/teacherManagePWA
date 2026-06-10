@@ -156,7 +156,28 @@ router.get('/upcoming', wxAuth, (req: Request, res: Response) => {
   res.json(lessons)
 })
 
-// ── 获取课程附件（课件） ──
+// ── 批量获取学生所有课程的附件 ──
+router.get('/materials', wxAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
+
+  // 先查该学生所有课程ID
+  const lessonRows = db.prepare('SELECT id FROM lessons WHERE studentId = ?').all(studentId) as any[]
+  const lessonIds = lessonRows.map((r) => r.id)
+  if (lessonIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  // 批量查所有附件
+  const placeholders = lessonIds.map(() => '?').join(',')
+  const rows = db.prepare(
+    `SELECT * FROM lesson_materials WHERE lessonId IN (${placeholders}) ORDER BY lessonId`
+  ).all(...lessonIds)
+
+  res.json(rows)
+})
+
+// ── 获取单课附件 ──
 router.get('/materials/:lessonId', wxAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId
   const lessonId = Number(req.params.lessonId)
@@ -170,6 +191,46 @@ router.get('/materials/:lessonId', wxAuth, (req: Request, res: Response) => {
 
   const materials = db.prepare('SELECT * FROM lesson_materials WHERE lessonId = ?').all(lessonId)
   res.json(materials)
+})
+
+// ── 下载附件文件 ──
+router.get('/file/:id', wxAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
+  const id = Number(req.params.id)
+
+  const row = db.prepare('SELECT * FROM lesson_materials WHERE id = ?').get(id) as any
+  if (!row) {
+    res.status(404).json({ error: '文件不存在' })
+    return
+  }
+
+  // 验证该附件所属课程属于该学生
+  const lesson = db.prepare('SELECT id FROM lessons WHERE id = ? AND studentId = ?').get(row.lessonId, studentId)
+  if (!lesson) {
+    res.status(403).json({ error: '无权访问' })
+    return
+  }
+
+  if (!row.fileData) {
+    res.status(404).json({ error: '无文件内容' })
+    return
+  }
+
+  // 解析 base64 dataURL
+  const matches = (row.fileData as string).match(/^data:([^;]+);base64,(.+)$/)
+  if (!matches) {
+    res.status(400).json({ error: '文件格式错误' })
+    return
+  }
+
+  const mimeType = matches[1]
+  const base64Data = matches[2]
+  const buffer = Buffer.from(base64Data, 'base64')
+
+  res.setHeader('Content-Type', mimeType)
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(row.fileName || 'download')}`)
+  res.setHeader('Content-Length', buffer.length)
+  res.send(buffer)
 })
 
 // ── 获取学习进度 ──

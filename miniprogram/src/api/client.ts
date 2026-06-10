@@ -86,3 +86,13 @@ export async function getMyProgress() {
 export async function getLessonMaterials(lessonId: number) {
   return apiRequest<any[]>(`/api/wx/materials/${lessonId}`)
 }
+
+// 批量获取学生所有课程附件
+export async function getAllMyMaterials() {
+  return apiRequest<any[]>('/api/wx/materials')
+}
+
+// 获取文件下载链接
+export function getFileDownloadUrl(materialId: number): string {
+  return `${API_BASE}/api/wx/file/${materialId}`
+}

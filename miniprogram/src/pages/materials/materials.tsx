@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyLessons, getLessonMaterials } from '../../api/client'
+import { getMyLessons, getAllMyMaterials, getFileDownloadUrl } from '../../api/client'
 import '../../app.scss'
 
 export default function MaterialsPage() {
   const [state, setState] = useState<AppState>({
     openid: null, isBound: false, studentId: null, studentName: '', isChecking: true,
   })
-  const [lessonsWithMats, setLessonsWithMats] = useState<any[]>([])
+  const [grouped, setGrouped] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,21 +25,30 @@ export default function MaterialsPage() {
 
   const loadMaterials = async () => {
     try {
-      const lessons = await getMyLessons(100)
-      // 只取有附件且已上课的课程
-      const withMats: any[] = []
-      for (const lesson of lessons) {
-        if (lesson.status === '放鸽子') continue
-        try {
-          const mats = await getLessonMaterials(lesson.id)
-          if (mats.length > 0) {
-            withMats.push({ ...lesson, materials: mats })
-          }
-        } catch {
-          // 无附件则跳过
+      const [lessons, allMats] = await Promise.all([
+        getMyLessons(200),
+        getAllMyMaterials(),
+      ])
+
+      // 按课程ID分组附件
+      const matMap = new Map<number, any[]>()
+      if (Array.isArray(allMats)) {
+        for (const mat of allMats) {
+          const arr = matMap.get(mat.lessonId) || []
+          arr.push(mat)
+          matMap.set(mat.lessonId, arr)
         }
       }
-      setLessonsWithMats(withMats)
+
+      // 将有附件的课程按日期倒序排列
+      const result = lessons
+        .filter((l) => matMap.has(l.id) && l.status !== '放鸽子')
+        .map((l) => ({
+          ...l,
+          materials: matMap.get(l.id) || [],
+        }))
+
+      setGrouped(result)
     } catch (err) {
       console.error('加载课件失败:', err)
     } finally {
@@ -54,21 +63,21 @@ export default function MaterialsPage() {
   const formatDate = (startTime: string) => {
     const [datePart] = startTime.split(' ')
     const [, m, d] = datePart.split('/')
-    return `${m}/${d}`
+    return `${m}月${d}日`
   }
 
   return (
     <ScrollView className="container" scrollY>
       <Text className="page-title">课件资料</Text>
-      <Text className="page-subtitle">{lessonsWithMats.length} 节课有课件</Text>
+      <Text className="page-subtitle">{grouped.length} 节课有课件</Text>
 
-      {lessonsWithMats.length === 0 ? (
+      {grouped.length === 0 ? (
         <View className="empty-state">
           <Text className="empty-icon">📂</Text>
           <Text className="empty-text">暂无课件，上完课后老师会上传</Text>
         </View>
       ) : (
-        lessonsWithMats.map((lesson) => (
+        grouped.map((lesson) => (
           <View key={lesson.id} className="card">
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: '16rpx' }}>
               <Text style={{ fontSize: '28rpx', fontWeight: 600, color: '#0F172A' }}>
@@ -85,6 +94,8 @@ export default function MaterialsPage() {
                 <Text style={{ fontSize: '26rpx', color: '#334155' }}>
                   {idx + 1}. {mat.text || mat.fileName || '(无标题)'}
                 </Text>
+
+                {/* 飞书/http 链接 */}
                 {mat.fileLink && /^https?:\/\//.test(mat.fileLink) && (
                   <Text
                     style={{ fontSize: '22rpx', color: '#2563EB', marginTop: '4rpx', display: 'block' }}
@@ -94,6 +105,34 @@ export default function MaterialsPage() {
                     }}
                   >
                     📎 复制文档链接
+                  </Text>
+                )}
+
+                {/* 本地上传的文件 */}
+                {mat.fileData && !mat.fileLink?.startsWith('http') && (
+                  <Text
+                    style={{ fontSize: '22rpx', color: '#059669', marginTop: '4rpx', display: 'block' }}
+                    onClick={() => {
+                      const url = getFileDownloadUrl(mat.id)
+                      // 复制下载链接，提示用户在浏览器中打开
+                      Taro.setClipboardData({
+                        data: url,
+                      })
+                      Taro.showModal({
+                        title: '文件下载',
+                        content: '下载链接已复制。由于小程序限制，请在浏览器中粘贴打开下载。',
+                        showCancel: false,
+                      })
+                    }}
+                  >
+                    📥 下载文件 ({mat.fileName || '附件'})
+                  </Text>
+                )}
+
+                {/* 课件库关联 */}
+                {mat.materialId && !mat.fileData && !mat.fileLink && (
+                  <Text style={{ fontSize: '22rpx', color: '#7C3AED', marginTop: '4rpx', display: 'block' }}>
+                    📋 来自课件库
                   </Text>
                 )}
               </View>
