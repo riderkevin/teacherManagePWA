@@ -16,6 +16,11 @@ const LESSON_TYPE_STYLE: Record<LessonType, string> = {
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 15, 30, 45]
 
+// 套餐标签构建器选项
+const PERIODS = ['一期', '二期', '三期', '四期', '五期']
+const PACK_SIZES = ['5节', '10节', '20节', '30节']
+const BONUSES = ['', '赠1节', '赠2节', '赠3节', '赠4节', '赠5节']
+
 /** 计算新课程对应的课时编号后缀（基于已完成的正式课） */
 function computeLessonSuffix(existingLessons: Lesson[], duration: number, excludeLessonId?: number): string {
   const before = existingLessons
@@ -70,6 +75,37 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
   const [hourPart, setHourPart] = useState('14')
   const [minutePart, setMinutePart] = useState('00')
 
+  // 套餐标签构建器
+  const [buildPeriod, setBuildPeriod] = useState('')
+  const [buildPack, setBuildPack] = useState('')
+  const [buildBonus, setBuildBonus] = useState('')
+  const [showBuilder, setShowBuilder] = useState(false)
+
+  // 学生历史套餐标签
+  const savedLabels = useMemo(() => {
+    const seen = new Set<string>()
+    return studentLessons
+      .filter((l) => l.lessonType === '正式课多节' && l.packageLabel)
+      .map((l) => l.packageLabel)
+      .filter((label) => {
+        if (seen.has(label)) return false
+        seen.add(label)
+        return true
+      })
+  }, [studentLessons])
+
+  // 构建器生成标签
+  const builtLabel = useMemo(() => {
+    if (!buildPeriod || !buildPack) return ''
+    const bonus = buildBonus || ''
+    return `正式课${buildPeriod}-${buildPack}一付${bonus}`
+  }, [buildPeriod, buildPack, buildBonus])
+
+  // 构建器变更 → 同步到表单
+  useEffect(() => {
+    if (showBuilder && builtLabel) update('packageLabel', builtLabel)
+  }, [builtLabel, showBuilder])
+
   // 加载学生列表
   useEffect(() => {
     getAllStudents().then(setStudents)
@@ -100,12 +136,15 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
           if (s) {
             setSelectedStudent(s)
             setStudentSearch(getStudentDisplayName(s))
-            // 旧课程标题可能没有课时后缀，补上
-            if (!data.title.includes('-课时')) {
+            // 重新计算课时编号（动态调整）
+            if (data.lessonType === '试听课') {
+              setForm((prev) => ({ ...prev, title: `${data.studentName}-试听课` }))
+            } else {
               const suffix = computeLessonSuffix(existing, data.duration, lesson?.id)
-              // 从旧标题中提取学生名称和课程类型
-              const typeLabel = data.lessonType === '试听课' ? '试听课' : '正式课'
-              setForm((prev) => ({ ...prev, title: `${data.studentName}-${typeLabel}-${suffix}` }))
+              setForm((prev) => ({
+                ...prev,
+                title: `${data.studentName}-正式课-${suffix}`,
+              }))
             }
           }
         })
@@ -156,16 +195,22 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
   // 时长变更
   const handleDurationChange = (val: number) => {
     const duration = Math.max(1, val)
-    // 同步更新课时编号
-    const excludeId = isEdit ? lesson?.id : undefined
-    const suffix = computeLessonSuffix(studentLessons, duration, excludeId)
-    const baseTitle = form.title.replace(/-课时[\d、]+$/, '')
-    setForm((prev) => ({
-      ...prev,
-      duration,
-      endTime: prev.startTime ? calcEndTime(prev.startTime, duration) : prev.endTime,
-      title: `${baseTitle}-${suffix}`,
-    }))
+    setForm((prev) => {
+      let newTitle = prev.title
+      // 仅正式课更新课时编号
+      if (prev.lessonType !== '试听课') {
+        const excludeId = isEdit ? lesson?.id : undefined
+        const suffix = computeLessonSuffix(studentLessons, duration, excludeId)
+        const baseTitle = prev.title.replace(/-课时[\d、]+$/, '')
+        newTitle = `${baseTitle}-${suffix}`
+      }
+      return {
+        ...prev,
+        duration,
+        endTime: prev.startTime ? calcEndTime(prev.startTime, duration) : prev.endTime,
+        title: newTitle,
+      }
+    })
   }
 
   // ── 学生选择器逻辑 ──
@@ -193,11 +238,20 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
         ? s.singlePrice
         : 0
 
-    // 获取该学生已有课程，计算课时编号
+    // 获取该学生已有课程
     const existing = isEdit ? await getLessonsByStudentId(s.id!) : await getLessonsByStudentId(s.id!)
     setStudentLessons(existing)
     const excludeId = isEdit ? lesson?.id : undefined
-    const suffix = computeLessonSuffix(existing, 1, excludeId)
+
+    // 试听课不加课时编号
+    const isTrial = defaultType === '试听课'
+    const suffix = isTrial ? '' : `-${computeLessonSuffix(existing, 1, excludeId)}`
+
+    // 重置构建器状态
+    setBuildPeriod('')
+    setBuildPack('')
+    setBuildBonus('')
+    setShowBuilder(false)
 
     setSelectedStudent(s)
     setStudentSearch(displayName)
@@ -206,7 +260,7 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
       ...prev,
       studentId: s.id!,
       studentName: displayName,
-      title: `${displayName}-${defaultType === '试听课' ? '试听课' : '正式课'}-${suffix}`,
+      title: `${displayName}-${isTrial ? '试听课' : '正式课'}${suffix}`,
       lessonType: defaultType,
       income: defaultIncome,
       packageLabel: '',
@@ -458,11 +512,22 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
                   type="button"
                   onClick={() => {
                     update('lessonType', t)
-                    // 切换类型时重置收入
+                    // 切换类型时重置收入 + 更新标题
                     if (t === '正式课多节') {
                       update('income', 0)
                     } else if (selectedStudent) {
                       update('income', t === '试听课' ? selectedStudent.trialPrice : selectedStudent.singlePrice)
+                    }
+                    // 更新标题：试听课不加课时编号，正式课加上
+                    const excludeId = isEdit ? lesson?.id : undefined
+                    if (t === '试听课') {
+                      if (selectedStudent) {
+                        update('title', `${getStudentDisplayName(selectedStudent)}-试听课`)
+                      }
+                    } else {
+                      const suffix = computeLessonSuffix(studentLessons, form.duration, excludeId)
+                      const base = form.title.replace(/-试听课$/, '').replace(/-正式课-课时[\d、]+$/, '')
+                      update('title', `${base}-正式课-${suffix}`)
                     }
                   }}
                   className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
@@ -479,17 +544,108 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
 
           {/* 正式课多节：套餐标签 */}
           {form.lessonType === '正式课多节' && (
-            <label className="block space-y-1.5">
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
               <span className="text-sm font-medium text-slate-700">套餐标签</span>
+
+              {/* 历史标签快捷选择 */}
+              {savedLabels.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-xs text-slate-400">选择已有标签</span>
+                  <div className="flex flex-wrap gap-2">
+                    {savedLabels.map((label) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => {
+                          update('packageLabel', label)
+                          setShowBuilder(false)
+                        }}
+                        className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                          form.packageLabel === label && !showBuilder
+                            ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 自定义组合构建器 */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBuilder(!showBuilder)}
+                  className={`text-xs font-medium transition-colors ${
+                    showBuilder ? 'text-blue-600' : 'text-slate-400 hover:text-blue-600'
+                  }`}
+                >
+                  {showBuilder ? '▾ 收起自定义组合' : '▸ 自定义组合新标签'}
+                </button>
+
+                {showBuilder && (
+                  <div className="space-y-2 bg-white rounded-lg border border-slate-200 p-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={buildPeriod}
+                        onChange={(e) => setBuildPeriod(e.target.value)}
+                        className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">期数</option>
+                        {PERIODS.map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={buildPack}
+                        onChange={(e) => setBuildPack(e.target.value)}
+                        className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">N节一付</option>
+                        {PACK_SIZES.map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={buildBonus}
+                        onChange={(e) => setBuildBonus(e.target.value)}
+                        className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">赠课(无)</option>
+                        {BONUSES.filter(Boolean).map((b) => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {builtLabel && (
+                      <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5 font-medium">
+                        预览：{builtLabel}
+                      </p>
+                    )}
+                    {!buildPeriod && !buildPack && (
+                      <p className="text-xs text-slate-400">选择期数、节数和赠课后自动生成标签</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 手动编辑 */}
               <input
                 type="text"
                 value={form.packageLabel}
-                onChange={(e) => update('packageLabel', e.target.value)}
-                placeholder="如：正式课一期-10节一付"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                onChange={(e) => {
+                  update('packageLabel', e.target.value)
+                  setShowBuilder(false)
+                }}
+                placeholder="或直接手动输入套餐标签…"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
               />
-              <p className="text-xs text-slate-400">记录该节课所属的套餐周期</p>
-            </label>
+              <p className="text-xs text-slate-400">
+                用于计算当前套餐剩余课时，格式如：正式课一期-10节一付赠2节
+              </p>
+            </div>
           )}
 
           {/* 课时收入（试听课/正式课单节 且 已上课时显示） */}
@@ -507,9 +663,9 @@ export default function LessonModal({ lesson, onSave, onClose }: Props) {
               <input
                 type="number"
                 min="0"
-                step="50"
+                step="1"
                 value={form.income || 0}
-                onChange={(e) => update('income', Number(e.target.value))}
+                onChange={(e) => update('income', Math.max(0, Number(e.target.value)))}
                 placeholder="0"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
