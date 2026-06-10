@@ -92,14 +92,16 @@ export async function getAllMyMaterials() {
   return apiRequest<any[]>('/api/wx/materials')
 }
 
-// 获取文件下载链接（课程附件）
+// 获取文件下载链接（课程附件），附带 openid 用于鉴权
 export function getFileDownloadUrl(materialId: number): string {
-  return `${API_BASE}/api/wx/file/${materialId}`
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/file/${materialId}?openid=${encodeURIComponent(openid)}`
 }
 
-// 获取课件库文件下载链接
+// 获取课件库文件下载链接，附带 openid 用于鉴权
 export function getMaterialFileUrl(materialId: number): string {
-  return `${API_BASE}/api/wx/material-file/${materialId}`
+  const openid = Taro.getStorageSync('wx_openid') || ''
+  return `${API_BASE}/api/wx/material-file/${materialId}?openid=${encodeURIComponent(openid)}`
 }
 
 // 预览/下载文件

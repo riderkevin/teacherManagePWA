@@ -193,8 +193,26 @@ router.get('/materials/:lessonId', wxAuth, (req: Request, res: Response) => {
   res.json(materials)
 })
 
+// ── 文件下载鉴权（支持 header x-wx-openid 或 query openid）──
+function wxFileAuth(req: Request, res: Response, next: Function) {
+  const openid = (req.headers['x-wx-openid'] as string) || (req.query.openid as string)
+  if (!openid) {
+    res.status(401).json({ error: '未登录' })
+    return
+  }
+  const binding = db.prepare(
+    'SELECT * FROM student_wx_bindings WHERE wxOpenid = ? AND isBound = 1'
+  ).get(openid) as any
+  if (!binding) {
+    res.status(403).json({ error: '未绑定学生' })
+    return
+  }
+  ;(req as any).studentId = binding.studentId
+  next()
+}
+
 // ── 下载附件文件 ──
-router.get('/file/:id', wxAuth, (req: Request, res: Response) => {
+router.get('/file/:id', wxFileAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId
   const id = Number(req.params.id)
 
@@ -228,13 +246,13 @@ router.get('/file/:id', wxAuth, (req: Request, res: Response) => {
   const buffer = Buffer.from(base64Data, 'base64')
 
   res.setHeader('Content-Type', mimeType)
-  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(row.fileName || 'download')}`)
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(row.fileName || 'download')}`)
   res.setHeader('Content-Length', buffer.length)
   res.send(buffer)
 })
 
 // ── 下载课件库文件 ──
-router.get('/material-file/:id', wxAuth, (req: Request, res: Response) => {
+router.get('/material-file/:id', wxFileAuth, (req: Request, res: Response) => {
   const id = Number(req.params.id)
   const row = db.prepare('SELECT * FROM materials WHERE id = ?').get(id) as any
   if (!row || !row.fileLink?.startsWith('data:')) {
