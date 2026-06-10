@@ -92,7 +92,32 @@ export async function getAllMyMaterials() {
   return apiRequest<any[]>('/api/wx/materials')
 }
 
-// 获取文件下载链接
+// 获取文件下载链接（课程附件）
 export function getFileDownloadUrl(materialId: number): string {
   return `${API_BASE}/api/wx/file/${materialId}`
+}
+
+// 获取课件库文件下载链接
+export function getMaterialFileUrl(materialId: number): string {
+  return `${API_BASE}/api/wx/material-file/${materialId}`
+}
+
+// 预览/下载文件
+export async function previewFile(url: string, fileName?: string) {
+  try {
+    const res = await Taro.downloadFile({ url })
+    if (res.statusCode === 200) {
+      await Taro.openDocument({ filePath: res.tempFilePath, showMenu: true })
+    } else {
+      throw new Error('下载失败')
+    }
+  } catch {
+    // 降级：复制链接在浏览器打开
+    Taro.setClipboardData({ data: url })
+    Taro.showModal({
+      title: '文件预览',
+      content: '小程序内无法预览此文件，链接已复制，请在浏览器中粘贴打开下载。',
+      showCancel: false,
+    })
+  }
 }

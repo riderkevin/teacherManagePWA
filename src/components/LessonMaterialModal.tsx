@@ -45,18 +45,21 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
     try {
       if (mode === 'library' && selectedMaterialId) {
         const mat = materials.find((m) => m.id === selectedMaterialId)
+        if (!mat) return
+        // 课件库的文件：如果是base64本地文件 → 放入fileData；如果是http链接 → 放入fileLink
+        const isDataUrl = mat.fileLink?.startsWith('data:')
         await addLessonMaterial({
           lessonId,
           materialId: selectedMaterialId,
-          text: mat?.content || '',
-          fileName: mat?.fileName || '',
-          fileData: '',
-          fileLink: mat?.fileLink || '',
+          text: mat.content || '',
+          fileName: mat.fileName || '',
+          fileData: isDataUrl ? mat.fileLink : '',
+          fileLink: isDataUrl ? '' : (mat.fileLink || ''),
         })
       } else if (mode === 'text' && textContent.trim()) {
         await addLessonMaterial({
           lessonId,
-          materialId: undefined,
+          materialId: undefined as unknown as number,
           text: textContent.trim(),
           fileName: '',
           fileData: '',
@@ -65,7 +68,7 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
       } else if (mode === 'upload' && (uploadFileData || uploadFileName)) {
         await addLessonMaterial({
           lessonId,
-          materialId: undefined,
+          materialId: undefined as unknown as number,
           text: uploadFileName,
           fileName: uploadFileName,
           fileData: uploadFileData,

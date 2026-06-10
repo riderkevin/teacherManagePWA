@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyLessons, getAllMyMaterials, getFileDownloadUrl } from '../../api/client'
+import { getMyLessons, getAllMyMaterials, getFileDownloadUrl, getMaterialFileUrl, previewFile } from '../../api/client'
 import '../../app.scss'
 
 export default function MaterialsPage() {
@@ -66,6 +66,26 @@ export default function MaterialsPage() {
     return `${m}月${d}日`
   }
 
+  // 处理课件点击
+  const handleMatClick = (mat: any) => {
+    // 本地上传文件 → 预览
+    if (mat.fileData) {
+      previewFile(getFileDownloadUrl(mat.id), mat.fileName)
+      return
+    }
+    // 课件库关联的文件 → 预览
+    if (mat.materialId && !mat.fileLink) {
+      previewFile(getMaterialFileUrl(mat.materialId), mat.fileName)
+      return
+    }
+    // HTTP链接 → 复制
+    if (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) {
+      Taro.setClipboardData({ data: mat.fileLink })
+      Taro.showToast({ title: '链接已复制，请在浏览器打开', icon: 'success' })
+      return
+    }
+  }
+
   return (
     <ScrollView className="container" scrollY>
       <Text className="page-title">课件资料</Text>
@@ -79,60 +99,40 @@ export default function MaterialsPage() {
       ) : (
         grouped.map((lesson) => (
           <View key={lesson.id} className="card">
-            <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: '16rpx' }}>
+            <View style={{ marginBottom: '16rpx' }}>
               <Text style={{ fontSize: '28rpx', fontWeight: 600, color: '#0F172A' }}>
                 {formatDate(lesson.startTime)} {lesson.title}
               </Text>
             </View>
             {lesson.materials.map((mat: any, idx: number) => (
-              <View key={mat.id || idx} style={{
-                padding: '16rpx 20rpx',
-                backgroundColor: '#F8FAFC',
-                borderRadius: '12rpx',
-                marginBottom: '8rpx',
-              }}>
+              <View
+                key={mat.id || idx}
+                onClick={() => handleMatClick(mat)}
+                style={{
+                  padding: '16rpx 20rpx',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '12rpx',
+                  marginBottom: '8rpx',
+                }}
+              >
                 <Text style={{ fontSize: '26rpx', color: '#334155' }}>
                   {idx + 1}. {mat.text || mat.fileName || '(无标题)'}
                 </Text>
 
-                {/* 飞书/http 链接 */}
-                {mat.fileLink && /^https?:\/\//.test(mat.fileLink) && (
-                  <Text
-                    style={{ fontSize: '22rpx', color: '#2563EB', marginTop: '4rpx', display: 'block' }}
-                    onClick={() => {
-                      Taro.setClipboardData({ data: mat.fileLink })
-                      Taro.showToast({ title: '链接已复制', icon: 'success' })
-                    }}
-                  >
-                    📎 复制文档链接
+                {/* 文件标识 */}
+                {mat.fileData && (
+                  <Text style={{ fontSize: '22rpx', color: '#059669', marginTop: '4rpx', display: 'block' }}>
+                    📥 {mat.fileName || '点击预览文件'}
                   </Text>
                 )}
-
-                {/* 本地上传的文件 */}
-                {mat.fileData && !mat.fileLink?.startsWith('http') && (
-                  <Text
-                    style={{ fontSize: '22rpx', color: '#059669', marginTop: '4rpx', display: 'block' }}
-                    onClick={() => {
-                      const url = getFileDownloadUrl(mat.id)
-                      // 复制下载链接，提示用户在浏览器中打开
-                      Taro.setClipboardData({
-                        data: url,
-                      })
-                      Taro.showModal({
-                        title: '文件下载',
-                        content: '下载链接已复制。由于小程序限制，请在浏览器中粘贴打开下载。',
-                        showCancel: false,
-                      })
-                    }}
-                  >
-                    📥 下载文件 ({mat.fileName || '附件'})
-                  </Text>
-                )}
-
-                {/* 课件库关联 */}
-                {mat.materialId && !mat.fileData && !mat.fileLink && (
+                {mat.materialId && !mat.fileLink && !mat.fileData && (
                   <Text style={{ fontSize: '22rpx', color: '#7C3AED', marginTop: '4rpx', display: 'block' }}>
-                    📋 来自课件库
+                    📋 课件库 · 点击查看
+                  </Text>
+                )}
+                {mat.fileLink && /^https?:\/\//.test(mat.fileLink) && (
+                  <Text style={{ fontSize: '22rpx', color: '#2563EB', marginTop: '4rpx', display: 'block' }}>
+                    🔗 点击复制文档链接
                   </Text>
                 )}
               </View>

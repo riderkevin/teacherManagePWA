@@ -233,6 +233,28 @@ router.get('/file/:id', wxAuth, (req: Request, res: Response) => {
   res.send(buffer)
 })
 
+// ── 下载课件库文件 ──
+router.get('/material-file/:id', wxAuth, (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  const row = db.prepare('SELECT * FROM materials WHERE id = ?').get(id) as any
+  if (!row || !row.fileLink?.startsWith('data:')) {
+    res.status(404).json({ error: '文件不存在' })
+    return
+  }
+
+  const matches = (row.fileLink as string).match(/^data:([^;]+);base64,(.+)$/)
+  if (!matches) {
+    res.status(400).json({ error: '文件格式错误' })
+    return
+  }
+
+  const buffer = Buffer.from(matches[2], 'base64')
+  res.setHeader('Content-Type', matches[1])
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(row.fileName || 'download')}`)
+  res.setHeader('Content-Length', buffer.length)
+  res.send(buffer)
+})
+
 // ── 获取学习进度 ──
 router.get('/progress', wxAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId
