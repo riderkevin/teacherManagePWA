@@ -104,21 +104,31 @@ export function getMaterialFileUrl(materialId: number): string {
   return `${API_BASE}/api/wx/material-file/${materialId}?openid=${encodeURIComponent(openid)}`
 }
 
-// 预览/下载文件
+// 预览/下载文件（request下载 + openDocument预览，绕过downloadFile的IP限制）
 export async function previewFile(url: string, fileName?: string) {
+  const fs = Taro.getFileSystemManager()
+  const tmpPath = `${Taro.env.USER_DATA_PATH}/${fileName || 'file'}`
+
   try {
-    const res = await Taro.downloadFile({ url })
-    if (res.statusCode === 200) {
-      await Taro.openDocument({ filePath: res.tempFilePath, showMenu: true })
-    } else {
-      throw new Error('下载失败')
+    // 用 request 下载（支持IP），写入临时文件后用 openDocument 预览
+    const res = await Taro.request({
+      url,
+      method: 'GET',
+      responseType: 'arraybuffer',
+    })
+    if (res.statusCode === 200 && res.data) {
+      fs.writeFileSync(tmpPath, res.data as ArrayBuffer, 'binary')
+      await Taro.openDocument({ filePath: tmpPath, showMenu: true })
+      return
     }
-  } catch {
+    throw new Error('下载失败')
+  } catch (err) {
+    console.error('预览文件失败:', err)
     // 降级：复制链接在浏览器打开
     Taro.setClipboardData({ data: url })
     Taro.showModal({
-      title: '文件预览',
-      content: '小程序内无法预览此文件，链接已复制，请在浏览器中粘贴打开下载。',
+      title: '预览失败',
+      content: '小程序内暂不支持预览此文件，下载链接已复制到剪贴板，请在浏览器中粘贴打开。',
       showCancel: false,
     })
   }
