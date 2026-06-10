@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, Input } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { checkLogin, type AppState } from '../../app'
+import { checkLogin, type AppState } from '../../utils/auth'
 import { bindWithCode } from '../../api/client'
 import '../../app.scss'
 

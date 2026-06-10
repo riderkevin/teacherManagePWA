@@ -8,6 +8,24 @@ const router = Router()
 // 小程序端接口（通过 openid 鉴权，学生只能看自己的数据）
 // ═══════════════════════════════════════════
 
+// ── 小程序登录：用 wx.login() code 换取 openid ──
+// POST /api/wx/login  body: { code }
+// 正式环境需调用微信 API https://api.weixin.qq.com/sns/jscode2session
+// 开发阶段：生成临时 openid
+router.post('/login', (req: Request, res: Response) => {
+  const { code } = req.body
+  if (!code) {
+    res.status(400).json({ error: '缺少登录凭证' })
+    return
+  }
+  // TODO: 正式环境替换为调用微信 API 获取真实 openid
+  // const wxRes = await fetch(`https://api.weixin.qq.com/sns/jscode2session?appid=${APPID}&secret=${SECRET}&js_code=${code}&grant_type=authorization_code`)
+  // const { openid } = await wxRes.json()
+  // 开发/测试阶段：用 code 的哈希作为临时 openid
+  const openid = 'wx_dev_' + Buffer.from(code).toString('base64').slice(0, 20)
+  res.json({ openid })
+})
+
 // 小程序登录/绑定校验中间件 —— 从 header 取 openid，查绑定表确认身份
 function wxAuth(req: Request, res: Response, next: Function) {
   const openid = req.headers['x-wx-openid'] as string

@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro'
-import { API_BASE } from '../app'
+import { API_BASE } from '../utils/auth'
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'

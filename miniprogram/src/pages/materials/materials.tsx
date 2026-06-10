@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { checkLogin, type AppState } from '../../app'
+import { checkLogin, type AppState } from '../../utils/auth'
 import { getMyLessons, getLessonMaterials } from '../../api/client'
 import '../../app.scss'
 
