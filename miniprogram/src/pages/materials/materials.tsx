@@ -73,9 +73,14 @@ export default function MaterialsPage() {
       previewFile(getFileDownloadUrl(mat.id), mat.fileName)
       return
     }
-    // 课件库关联的文件 → 预览
-    if (mat.materialId && !mat.fileLink) {
-      previewFile(getMaterialFileUrl(mat.materialId), mat.fileName)
+    // fileLink 是 base64 数据（旧数据格式）→ 也走文件预览
+    if (mat.fileLink && mat.fileLink.startsWith('data:')) {
+      previewFile(getFileDownloadUrl(mat.id), mat.fileName)
+      return
+    }
+    // 课件库关联（无本地文件但有 materialId）→ 从课件库下载
+    if (mat.materialId && (!mat.fileLink || mat.fileLink.startsWith('data:'))) {
+      previewFile(getMaterialFileUrl(mat.materialId), mat.fileName || '课件')
       return
     }
     // HTTP链接 → 复制
@@ -83,6 +88,10 @@ export default function MaterialsPage() {
       Taro.setClipboardData({ data: mat.fileLink })
       Taro.showToast({ title: '链接已复制，请在浏览器打开', icon: 'success' })
       return
+    }
+    // 纯文本 → 无操作
+    if (mat.text) {
+      Taro.showToast({ title: '此为文字备注，无附件文件', icon: 'none' })
     }
   }
 
