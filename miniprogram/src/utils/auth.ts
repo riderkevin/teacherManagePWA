@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import Taro from '@tarojs/taro'
 
-// API 基础地址
-// 线上使用 HTTPS 域名
-const SERVER_HOST = 'kevinguitarclass.cn'
-export const API_BASE = `https://${SERVER_HOST}`
+// API 基础地址（备案期间临时用IP，备案后可切换为域名）
+const SERVER_HOST = '124.223.170.68'
+export const API_BASE = `http://${SERVER_HOST}`
 
 export interface AppState {
   openid: string | null
