@@ -351,7 +351,10 @@ export function addMaterial(material: Omit<Material, 'id'>): number {
     INSERT INTO materials (content, parentId, category, difficulty, fileLink, fileName, targetSpeed, notes)
     VALUES (@content, @parentId, @category, @difficulty, @fileLink, @fileName, @targetSpeed, @notes)
   `)
-  const result = stmt.run(material)
+  const result = stmt.run({
+    ...material,
+    parentId: material.parentId ?? null,
+  })
   return Number(result.lastInsertRowid)
 }
 
@@ -449,7 +452,10 @@ export function addLessonMaterial(m: Omit<LessonMaterial, 'id'>): number {
     INSERT INTO lesson_materials (lessonId, materialId, text, fileName, fileData, fileLink)
     VALUES (@lessonId, @materialId, @text, @fileName, @fileData, @fileLink)
   `)
-  const result = stmt.run(m)
+  const result = stmt.run({
+    ...m,
+    materialId: m.materialId ?? null,
+  })
   return Number(result.lastInsertRowid)
 }
 
