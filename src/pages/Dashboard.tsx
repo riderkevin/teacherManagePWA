@@ -284,10 +284,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                   {items.map((lesson) => (
-                    <button
+                    <div
                       key={lesson.id}
                       onClick={() => navigate('/calendar')}
-                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50/50 transition-colors text-left"
+                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-blue-50/50 transition-colors text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
@@ -319,7 +319,7 @@ export default function Dashboard() {
                         )}
                         <ChevronRight className="h-4 w-4 text-slate-300" />
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               ))
