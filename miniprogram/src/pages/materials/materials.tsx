@@ -316,15 +316,17 @@ export default function MaterialsPage() {
                               </View>
                             )}
 
-                            {/* 操作按钮 */}
-                            <View style={{
-                              display: 'flex', flexDirection: 'row', gap: '16rpx',
-                              marginTop: '12rpx',
-                            }}>
-                              <MaterialBtn onClick={() => handlePreview(mat)}>
-                                点击查看课件
-                              </MaterialBtn>
-                            </View>
+                            {/* 操作按钮（仅当有实际文件时展示） */}
+                            {hasFile && (
+                              <View style={{
+                                display: 'flex', flexDirection: 'row', gap: '16rpx',
+                                marginTop: '12rpx',
+                              }}>
+                                <MaterialBtn onClick={() => handlePreview(mat)}>
+                                  点击查看课件
+                                </MaterialBtn>
+                              </View>
+                            )}
                           </View>
                         )
                       })}

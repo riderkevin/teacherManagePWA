@@ -215,17 +215,19 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
                   </Text>
                   {renderDifficulty(mat.difficulty)}
                 </View>
-                {/* 附件名称（仅当有实际文件时展示，纯文字不重复） */}
+                {/* 附件名称 + 按钮（仅当有实际文件时展示，纯文字不重复） */}
                 {hasFile && (
-                  <View style={{ marginTop: '4rpx' }}>
-                    <Text style={{ fontSize: '22rpx', color: '#64748B' }}>{`附件 · ${name}`}</Text>
-                  </View>
+                  <>
+                    <View style={{ marginTop: '4rpx' }}>
+                      <Text style={{ fontSize: '22rpx', color: '#64748B' }}>{`附件 · ${name}`}</Text>
+                    </View>
+                    <View style={{ display: 'flex', flexDirection: 'row', gap: '16rpx', marginTop: '10rpx' }}>
+                      <MaterialBtn onClick={() => handleMatPreview(mat)}>
+                        点击查看课件
+                      </MaterialBtn>
+                    </View>
+                  </>
                 )}
-                <View style={{ display: 'flex', flexDirection: 'row', gap: '16rpx', marginTop: '10rpx' }}>
-                  <MaterialBtn onClick={() => handleMatPreview(mat)}>
-                    点击查看课件
-                  </MaterialBtn>
-                </View>
               </View>
             )
           })}
