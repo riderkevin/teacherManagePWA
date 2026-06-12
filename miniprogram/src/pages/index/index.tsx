@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyLessons, getMyProgress, getAllMyMaterials, previewFile, downloadFileToLocal } from '../../api/client'
+import { getMyLessons, getMyProgress, getAllMyMaterials, previewFile } from '../../api/client'
 import '../../app.scss'
 
 function getFileDataUrl(id: number) {
@@ -198,7 +198,6 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
         <View style={{ marginTop: '16rpx', borderTop: '1rpx solid #E2E8F0', paddingTop: '14rpx' }}>
           {materials.map((mat: any, idx: number) => {
             const name = mat.fileName || mat.text || '无名称'
-            const downloadable = !!(mat.fileData || mat.materialId)
             return (
               <View
                 key={mat.id || idx}
@@ -209,21 +208,19 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
                   marginBottom: '8rpx',
                 }}
               >
-                <Text style={{ fontSize: '26rpx', color: '#334155' }}>
-                  {idx + 1}. {mat.text || mat.fileName || '(无标题)'}
-                </Text>
+                <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: '26rpx', color: '#334155', flex: 1 }}>
+                    {idx + 1}. {mat.text || mat.fileName || '(无标题)'}
+                  </Text>
+                  {renderDifficulty(mat.difficulty)}
+                </View>
                 <View style={{ marginTop: '4rpx' }}>
                   <Text style={{ fontSize: '22rpx', color: '#64748B' }}>{`附件 · ${name}`}</Text>
                 </View>
                 <View style={{ display: 'flex', flexDirection: 'row', gap: '16rpx', marginTop: '10rpx' }}>
-                  <MaterialBtn color="blue" bg="#EFF6FF" border="#BFDBFE" onClick={() => handleMatPreview(mat)}>
-                    点击查看
+                  <MaterialBtn onClick={() => handleMatPreview(mat)}>
+                    点击查看课件
                   </MaterialBtn>
-                  {downloadable && (
-                    <MaterialBtn color="green" bg="#F0FDF4" border="#BBF7D0" onClick={() => handleMatDownload(mat)}>
-                      下载到本地
-                    </MaterialBtn>
-                  )}
                 </View>
               </View>
             )
@@ -234,22 +231,30 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
   )
 }
 
+// 难度星级
+function renderDifficulty(level: number | null) {
+  if (!level || level <= 0) return null
+  const stars = '★'.repeat(Math.min(level, 10))
+  return (
+    <Text style={{ fontSize: '22rpx', color: '#F59E0B', marginLeft: '8rpx', flexShrink: 0 }}>
+      {stars}
+    </Text>
+  )
+}
+
 // 课件操作按钮
-function MaterialBtn({ color, bg, border, onClick, children }: {
-  color: string; bg: string; border: string; onClick: () => void; children: string
-}) {
-  const textColor = color === 'blue' ? '#2563EB' : '#16A34A'
+function MaterialBtn({ onClick, children }: { onClick: () => void; children: string }) {
   return (
     <View
       onClick={onClick}
       style={{
         padding: '8rpx 24rpx',
         borderRadius: '8rpx',
-        backgroundColor: bg,
-        border: `1rpx solid ${border}`,
+        backgroundColor: '#EFF6FF',
+        border: '1rpx solid #BFDBFE',
       }}
     >
-      <Text style={{ fontSize: '24rpx', color: textColor }}>{children}</Text>
+      <Text style={{ fontSize: '24rpx', color: '#2563EB' }}>{children}</Text>
     </View>
   )
 }
@@ -278,13 +283,3 @@ function handleMatPreview(mat: any) {
   }
 }
 
-function handleMatDownload(mat: any) {
-  if (mat.fileData) {
-    downloadFileToLocal(getFileDataUrl(mat.id), mat.fileName)
-  } else if (mat.materialId) {
-    downloadFileToLocal(getMaterialFileDataUrl(mat.materialId), mat.fileName || '课件')
-  } else if (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) {
-    Taro.setClipboardData({ data: mat.fileLink })
-    Taro.showToast({ title: '链接已复制，请在浏览器打开下载', icon: 'success' })
-  }
-}

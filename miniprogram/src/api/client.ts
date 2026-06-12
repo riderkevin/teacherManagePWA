@@ -196,9 +196,12 @@ export async function downloadFileToLocal(url: string, fileName?: string) {
     if (!res || !res.base64) throw new Error('无文件数据')
 
     const fs = Taro.getFileSystemManager()
-    const ext = res.mimeType?.split('/')[1] || 'bin'
-    const safeName = (res.fileName || fileName || 'file').replace(/[^a-zA-Z0-9._一-鿿-]/g, '_')
-    filePath = `${Taro.env.USER_DATA_PATH}/${safeName}.${ext}`
+    const originalName = res.fileName || fileName || 'file'
+    // 仅移除路径分隔符 / 和控制字符，保留空格、#、中文等原始文件名
+    const cleanName = originalName.replace(/[/\x00-\x1f]/g, '')
+    // 如果文件名已有后缀则直接使用，否则从 mimeType 补充
+    const hasExtension = /\.[a-zA-Z0-9]{1,10}$/.test(cleanName)
+    filePath = `${Taro.env.USER_DATA_PATH}/${cleanName}${hasExtension ? '' : '.' + (res.mimeType?.split('/')[1] || 'bin')}`
 
     const buffer = base64ToArrayBuffer(res.base64)
     fs.writeFileSync(filePath, buffer)

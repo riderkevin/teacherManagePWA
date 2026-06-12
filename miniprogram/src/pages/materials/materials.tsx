@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { View, Text, ScrollView, Input } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyMaterialsEnriched, previewFile, downloadFileToLocal } from '../../api/client'
+import { getMyMaterialsEnriched, previewFile } from '../../api/client'
 import '../../app.scss'
 
 function getFileDataUrl(id: number) {
@@ -37,21 +37,18 @@ function renderDifficulty(level: number | null) {
 }
 
 // 课件操作按钮
-function MaterialBtn({ color, bg, border, onClick, children }: {
-  color: string; bg: string; border: string; onClick: () => void; children: string
-}) {
-  const textColor = color === 'blue' ? '#2563EB' : '#16A34A'
+function MaterialBtn({ onClick, children }: { onClick: () => void; children: string }) {
   return (
     <View
       onClick={onClick}
       style={{
         padding: '8rpx 24rpx',
         borderRadius: '8rpx',
-        backgroundColor: bg,
-        border: `1rpx solid ${border}`,
+        backgroundColor: '#EFF6FF',
+        border: '1rpx solid #BFDBFE',
       }}
     >
-      <Text style={{ fontSize: '24rpx', color: textColor }}>{children}</Text>
+      <Text style={{ fontSize: '24rpx', color: '#2563EB' }}>{children}</Text>
     </View>
   )
 }
@@ -159,21 +156,6 @@ export default function MaterialsPage() {
       Taro.showToast({ title: '此为文字备注，无附件文件', icon: 'none' })
     }
   }
-
-  // 下载
-  const handleDownload = (mat: any) => {
-    if (mat.fileData) {
-      downloadFileToLocal(getFileDataUrl(mat.id), mat.fileName)
-    } else if (mat.materialId) {
-      downloadFileToLocal(getMaterialFileDataUrl(mat.materialId), mat.fileName || '课件')
-    } else if (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) {
-      Taro.setClipboardData({ data: mat.fileLink })
-      Taro.showToast({ title: '链接已复制，请在浏览器打开下载', icon: 'success' })
-    }
-  }
-
-  // 是否可下载
-  const canDownload = (mat: any) => !!(mat.fileData || mat.materialId)
 
   if (loading) {
     return <View className="container"><View className="loading"><Text>加载中…</Text></View></View>
@@ -290,7 +272,6 @@ export default function MaterialsPage() {
                           }
                         }
                         const fileName = mat.fileName || ''
-                        const downloadable = canDownload(mat)
 
                         return (
                           <View
@@ -339,20 +320,9 @@ export default function MaterialsPage() {
                               display: 'flex', flexDirection: 'row', gap: '16rpx',
                               marginTop: '12rpx',
                             }}>
-                              <MaterialBtn
-                                color="blue" bg="#EFF6FF" border="#BFDBFE"
-                                onClick={() => handlePreview(mat)}
-                              >
-                                点击查看
+                              <MaterialBtn onClick={() => handlePreview(mat)}>
+                                点击查看课件
                               </MaterialBtn>
-                              {downloadable && (
-                                <MaterialBtn
-                                  color="green" bg="#F0FDF4" border="#BBF7D0"
-                                  onClick={() => handleDownload(mat)}
-                                >
-                                  下载到本地
-                                </MaterialBtn>
-                              )}
                             </View>
                           </View>
                         )
