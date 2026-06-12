@@ -198,6 +198,7 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
         <View style={{ marginTop: '16rpx', borderTop: '1rpx solid #E2E8F0', paddingTop: '14rpx' }}>
           {materials.map((mat: any, idx: number) => {
             const name = mat.fileName || mat.text || '无名称'
+            const hasFile = !!(mat.fileData || mat.materialId || (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) || (mat.fileLink && mat.fileLink.startsWith('data:')))
             return (
               <View
                 key={mat.id || idx}
@@ -214,9 +215,12 @@ function renderLessonCard(lesson: any, matMap: Map<number, any[]>) {
                   </Text>
                   {renderDifficulty(mat.difficulty)}
                 </View>
-                <View style={{ marginTop: '4rpx' }}>
-                  <Text style={{ fontSize: '22rpx', color: '#64748B' }}>{`附件 · ${name}`}</Text>
-                </View>
+                {/* 附件名称（仅当有实际文件时展示，纯文字不重复） */}
+                {hasFile && (
+                  <View style={{ marginTop: '4rpx' }}>
+                    <Text style={{ fontSize: '22rpx', color: '#64748B' }}>{`附件 · ${name}`}</Text>
+                  </View>
+                )}
                 <View style={{ display: 'flex', flexDirection: 'row', gap: '16rpx', marginTop: '10rpx' }}>
                   <MaterialBtn onClick={() => handleMatPreview(mat)}>
                     点击查看课件

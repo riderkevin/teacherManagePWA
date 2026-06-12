@@ -271,6 +271,7 @@ export default function MaterialsPage() {
                             itemName = '' // 不重复显示了
                           }
                         }
+                        const hasFile = !!(mat.fileData || mat.materialId || (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) || (mat.fileLink && mat.fileLink.startsWith('data:')))
                         const fileName = mat.fileName || ''
 
                         return (
@@ -306,8 +307,8 @@ export default function MaterialsPage() {
                               </View>
                             )}
 
-                            {/* 附件名称 */}
-                            {fileName && (
+                            {/* 附件名称（仅当有实际文件时展示，纯文字不重复） */}
+                            {fileName && hasFile && (
                               <View style={{ marginTop: '6rpx' }}>
                                 <Text style={{ fontSize: '22rpx', color: '#64748B' }}>
                                   附件 · {fileName}
