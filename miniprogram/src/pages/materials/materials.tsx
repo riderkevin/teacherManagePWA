@@ -275,8 +275,9 @@ export default function MaterialsPage() {
 
                       {/* 课件列表 */}
                       {group.items.map((mat: any, mi: number) => {
-                        // 子类型标题：有 parentContent 时用 materialContent（它是子练习标题）
-                        const subTitle = mat.parentContent ? mat.materialContent : null
+                        // 子类型标题：仅当有父级且子标题与父级不同时才显示（避免重复）
+                        const subTitle = (mat.parentContent && mat.materialContent && mat.materialContent !== mat.parentContent)
+                          ? mat.materialContent : null
                         // 具体课件名
                         const itemName = mat.text || mat.fileName || '(无标题)'
                         const fileName = mat.fileName || ''
