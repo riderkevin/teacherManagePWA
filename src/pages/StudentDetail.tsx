@@ -36,18 +36,7 @@ import type { Student, Lesson, LessonMaterial, Payment } from '../types'
 import StudentModal from '../components/StudentModal'
 import PaymentModal from '../components/PaymentModal'
 import LessonMaterialModal from '../components/LessonMaterialModal'
-import RadarChart from '../components/RadarChart'
 import { generateBindCode, getBindingStatus, unbindStudent } from '../api/wx'
-
-// ── 示例雷达图维度（后续可从 Student 字段读取实际数据） ──
-const SAMPLE_DIMENSIONS = [
-  { label: '技法', value: 7 },
-  { label: '乐理', value: 5 },
-  { label: '节奏感', value: 6 },
-  { label: '即兴', value: 4 },
-  { label: '视奏', value: 5 },
-  { label: '创作', value: 3 },
-]
 
 export default function StudentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -379,17 +368,6 @@ export default function StudentDetailPage() {
 
         {/* 雷达图 + 数据看板 */}
         <div className="space-y-6">
-          {/* 多维能力图 */}
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3 text-center">
-              学习维度评估
-            </h3>
-            <RadarChart dimensions={SAMPLE_DIMENSIONS} size={240} />
-            <p className="text-xs text-slate-400 text-center mt-2">
-              评估数据后续可编辑
-            </p>
-          </div>
-
           {/* 数据看板 */}
           {stats && (
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
