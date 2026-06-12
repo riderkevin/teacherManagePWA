@@ -135,7 +135,8 @@ export default function PaymentModal({ studentId, studentName, payment, onSave, 
                 <input
                   type="number"
                   required
-                  min="1"
+                  min="0"
+                  step="any"
                   value={form.amount || ''}
                   onChange={(e) => update('amount', Number(e.target.value))}
                   placeholder="0"

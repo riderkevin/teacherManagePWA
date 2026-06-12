@@ -24,6 +24,7 @@ import {
   getStudentById,
   getLessonsByStudentId,
   updateStudent,
+  updateLesson,
   getPaymentsByStudentId,
   addPayment,
   updatePayment,
@@ -36,6 +37,7 @@ import type { Student, Lesson, LessonMaterial, Payment } from '../types'
 import StudentModal from '../components/StudentModal'
 import PaymentModal from '../components/PaymentModal'
 import LessonMaterialModal from '../components/LessonMaterialModal'
+import LessonModal from '../components/LessonModal'
 import { generateBindCode, getBindingStatus, unbindStudent } from '../api/wx'
 
 export default function StudentDetailPage() {
@@ -54,6 +56,7 @@ export default function StudentDetailPage() {
   const [materialModalLesson, setMaterialModalLesson] = useState<Lesson | null>(null)
   const [lessonMaterialsMap, setLessonMaterialsMap] = useState<Map<number, LessonMaterial[]>>(new Map())
   const [copied, setCopied] = useState(false)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
 
   // 微信绑定状态
   const [bindStatus, setBindStatus] = useState<{ isBound: boolean; wxNickname?: string; boundAt?: string } | null>(null)
@@ -143,6 +146,14 @@ export default function StudentDetailPage() {
     if (!deletePaymentTarget?.id) return
     await deletePayment(deletePaymentTarget.id)
     setDeletePaymentTarget(null)
+    load()
+  }
+
+  // 编辑课程记录
+  const handleEditLesson = async (data: Omit<Lesson, 'id'>) => {
+    if (!editingLesson?.id) return
+    await updateLesson(editingLesson.id, data)
+    setEditingLesson(null)
     load()
   }
 
@@ -564,6 +575,13 @@ export default function StudentDetailPage() {
                         </span>
                       )}
                       <button
+                        onClick={(e) => { e.stopPropagation(); setEditingLesson(lesson) }}
+                        className="p-1 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded transition-colors"
+                        title="编辑课程"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); handleCopyLesson(lesson) }}
                         className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
                         title="复制本节课件"
@@ -694,6 +712,15 @@ export default function StudentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 课程编辑弹窗 */}
+      {editingLesson && (
+        <LessonModal
+          lesson={editingLesson}
+          onSave={handleEditLesson}
+          onClose={() => setEditingLesson(null)}
+        />
+      )}
 
       {/* 缴费弹窗 */}
       {paymentModalOpen && student?.id && (
