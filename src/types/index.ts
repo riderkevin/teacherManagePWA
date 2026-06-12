@@ -240,6 +240,15 @@ function buildTotalDisplay(lessons: Lesson[]): string {
   return `总课时${numbers.join('、')}`
 }
 
+// 小程序浏览日志
+export interface WxLog {
+  id?: number
+  studentId: number
+  event: string     // '绑定' | '解绑' | '访问课件'
+  detail: string    // 详细信息
+  createdAt: string // ISO 时间戳
+}
+
 // ═══════════════════════════════════════════
 // 乐队管理
 // ═══════════════════════════════════════════

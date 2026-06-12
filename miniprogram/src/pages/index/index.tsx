@@ -280,8 +280,7 @@ function handleMatPreview(mat: any) {
     return
   }
   if (mat.fileLink && /^https?:\/\//.test(mat.fileLink)) {
-    Taro.setClipboardData({ data: mat.fileLink })
-    Taro.showToast({ title: '链接已复制，请在浏览器打开', icon: 'success' })
+    Taro.navigateTo({ url: `/pages/webview/webview?url=${encodeURIComponent(mat.fileLink)}` })
     return
   }
   if (mat.text) {

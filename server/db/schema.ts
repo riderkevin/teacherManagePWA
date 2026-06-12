@@ -147,6 +147,16 @@ db.exec(`
     notes TEXT NOT NULL DEFAULT ''
   );
 
+  -- 小程序浏览日志（记录学生在小程序中的操作）
+  CREATE TABLE IF NOT EXISTS wx_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    studentId INTEGER NOT NULL,
+    event TEXT NOT NULL DEFAULT '',
+    detail TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL DEFAULT '',
+    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
+  );
+
   -- 演出曲目单（关联表）
   CREATE TABLE IF NOT EXISTS band_event_songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

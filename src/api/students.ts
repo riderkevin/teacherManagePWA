@@ -1,5 +1,5 @@
 import { request } from './client'
-import type { Student, Lesson, Payment } from '../types'
+import type { Student, Lesson, Payment, WxLog } from '../types'
 
 // 复用 src/types 的类型定义
 
@@ -55,4 +55,8 @@ export async function getStudentPackageStats(studentId: number): Promise<{
   currentRemaining: number
 }> {
   return request(`/api/students/${studentId}/stats`)
+}
+
+export async function getStudentWxLogs(studentId: number): Promise<WxLog[]> {
+  return request<WxLog[]>(`/api/students/${studentId}/wx-logs`)
 }

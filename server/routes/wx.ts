@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express'
 import db from '../db/schema'
+import { addWxLog } from '../db/repository'
 import { authMiddleware } from '../middleware/auth'
 
 const router = Router()
@@ -93,6 +94,14 @@ router.post('/bind', (req: Request, res: Response) => {
 
   // 标记邀请码为已使用
   db.prepare('UPDATE bind_codes SET used = 1, wxOpenid = ? WHERE code = ?').run(openid, code)
+
+  // 记录绑定日志
+  addWxLog({
+    studentId: bindCode.studentId,
+    event: '绑定',
+    detail: `绑定码 ${code}`,
+    createdAt: new Date().toISOString(),
+  })
 
   const student = db.prepare('SELECT * FROM students WHERE id = ?').get(bindCode.studentId) as any
   res.json({
@@ -257,17 +266,34 @@ router.get('/file-data/:id', wxFileAuth, (req: Request, res: Response) => {
   const matches = source.match(/^data:([^;]+);base64,(.+)$/)
   if (!matches) return res.status(400).json({ error: '文件格式错误' })
 
+  // 记录课件访问日志
+  addWxLog({
+    studentId,
+    event: '访问课件',
+    detail: row.fileName || '课程附件',
+    createdAt: new Date().toISOString(),
+  })
+
   res.json({ mimeType: matches[1], fileName: row.fileName || 'file', base64: matches[2] })
 })
 
 // ── 获取课件库文件数据（JSON格式）──
 router.get('/material-file-data/:id', wxFileAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
   const id = Number(req.params.id)
   const row = db.prepare('SELECT * FROM materials WHERE id = ?').get(id) as any
   if (!row?.fileLink?.startsWith('data:')) return res.status(404).json({ error: '文件不存在' })
 
   const matches = (row.fileLink as string).match(/^data:([^;]+);base64,(.+)$/)
   if (!matches) return res.status(400).json({ error: '文件格式错误' })
+
+  // 记录课件访问日志
+  addWxLog({
+    studentId,
+    event: '访问课件',
+    detail: row.fileName || row.content || '课件库文件',
+    createdAt: new Date().toISOString(),
+  })
 
   res.json({ mimeType: matches[1], fileName: row.fileName || 'file', base64: matches[2] })
 })
@@ -433,14 +459,32 @@ router.get('/admin/binding/:studentId', authMiddleware, (req: Request, res: Resp
 router.post('/unbind', wxAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId
   db.prepare('UPDATE student_wx_bindings SET isBound = 0 WHERE studentId = ?').run(studentId)
+
+  // 记录解绑日志
+  addWxLog({
+    studentId,
+    event: '解绑',
+    detail: '学生自行解除绑定',
+    createdAt: new Date().toISOString(),
+  })
+
   res.json({ ok: true })
 })
 
-// ── 解除绑定 ──
+// ── 解除绑定（后台管理端） ──
 // DELETE /api/wx/admin/unbind/:studentId
 router.delete('/admin/unbind/:studentId', authMiddleware, (req: Request, res: Response) => {
   const studentId = Number(req.params.studentId)
   db.prepare('UPDATE student_wx_bindings SET isBound = 0 WHERE studentId = ?').run(studentId)
+
+  // 记录解绑日志
+  addWxLog({
+    studentId,
+    event: '解绑',
+    detail: '老师后台解除绑定',
+    createdAt: new Date().toISOString(),
+  })
+
   res.json({ ok: true })
 })
 

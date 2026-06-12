@@ -4,6 +4,7 @@ export default defineAppConfig({
     'pages/materials/materials',
     'pages/bind/bind',
     'pages/profile/profile',
+    'pages/webview/webview',
   ],
   window: {
     backgroundTextStyle: 'light',

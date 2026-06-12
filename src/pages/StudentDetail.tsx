@@ -10,8 +10,6 @@ import {
   Music,
   Target,
   TrendingUp,
-  Mic,
-  FileMusic,
   DollarSign,
   CreditCard,
   Plus,
@@ -31,9 +29,10 @@ import {
   deletePayment,
   getStudentPackageStats,
   getLessonMaterials,
+  getStudentWxLogs,
 } from '../api'
 import { getStudentDisplayName, computeProgress } from '../types'
-import type { Student, Lesson, LessonMaterial, Payment } from '../types'
+import type { Student, Lesson, LessonMaterial, Payment, WxLog } from '../types'
 import StudentModal from '../components/StudentModal'
 import PaymentModal from '../components/PaymentModal'
 import LessonMaterialModal from '../components/LessonMaterialModal'
@@ -57,6 +56,7 @@ export default function StudentDetailPage() {
   const [lessonMaterialsMap, setLessonMaterialsMap] = useState<Map<number, LessonMaterial[]>>(new Map())
   const [copied, setCopied] = useState(false)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
+  const [wxLogs, setWxLogs] = useState<WxLog[] | null>(null)
 
   // 微信绑定状态
   const [bindStatus, setBindStatus] = useState<{ isBound: boolean; wxNickname?: string; boundAt?: string } | null>(null)
@@ -87,8 +87,9 @@ export default function StudentDetailPage() {
     }))
     setLessonMaterialsMap(matsMap)
 
-    // 加载绑定状态
+    // 加载绑定状态 & 浏览日志
     getBindingStatus(sid).then(setBindStatus).catch(() => setBindStatus(null))
+    getStudentWxLogs(sid).then(setWxLogs).catch(() => setWxLogs([]))
   }
 
   useEffect(() => {
@@ -609,7 +610,7 @@ export default function StudentDetailPage() {
         </div>
       )}
 
-      {/* ── 缴费记录 + 作品展示 ── */}
+      {/* ── 缴费记录 + 小程序浏览日志 ── */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 缴费记录 */}
         {payments !== null && (
@@ -699,16 +700,58 @@ export default function StudentDetailPage() {
           </div>
         )}
 
-        {/* 作品展示（占位） */}
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6">
-          <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <FileMusic className="h-4 w-4 text-amber-500" />
-            作品展示
-          </h3>
-          <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-            <Mic className="h-10 w-10 mb-3 opacity-50" />
-            <p className="text-sm">作品展示模块即将上线</p>
-            <p className="text-xs mt-1">可上传录音、视频、曲谱等</p>
+        {/* 小程序浏览日志 */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <svg className="h-4 w-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              小程序浏览日志
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-50 max-h-64 overflow-y-auto">
+            {wxLogs === null ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-400">
+                加载中…
+              </div>
+            ) : wxLogs.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-400">
+                暂无浏览记录
+              </div>
+            ) : (
+              wxLogs.map((log) => {
+                const eventStyle =
+                  log.event === '绑定'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : log.event === '解绑'
+                      ? 'bg-red-50 text-red-600'
+                      : 'bg-blue-50 text-blue-700'
+
+                // 格式化时间：ISO → "2026.2.3 14:39:02"
+                const formatTime = (iso: string) => {
+                  const d = new Date(iso)
+                  return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+                }
+
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/50 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-slate-700 truncate">{log.detail}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{formatTime(log.createdAt)}</p>
+                    </div>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ml-3 ${eventStyle}`}
+                    >
+                      {log.event}
+                    </span>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       </div>

@@ -65,4 +65,11 @@ router.get('/:id/stats', (req: Request, res: Response) => {
   res.json(stats)
 })
 
+// 获取学生小程序浏览日志
+router.get('/:id/wx-logs', (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  const logs = repo.getStudentWxLogs(id)
+  res.json(logs)
+})
+
 export default router

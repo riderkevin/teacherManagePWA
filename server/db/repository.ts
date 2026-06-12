@@ -544,6 +544,33 @@ export function importAllData(data: BackupData): void {
 }
 
 // ═══════════════════════════════════════════
+// 小程序浏览日志
+// ═══════════════════════════════════════════
+
+export interface WxLog {
+  id?: number
+  studentId: number
+  event: string    // '绑定' | '解绑' | '访问课件'
+  detail: string   // 如课件名称/类型
+  createdAt: string
+}
+
+export function getStudentWxLogs(studentId: number): WxLog[] {
+  const rows = db.prepare(
+    'SELECT * FROM wx_logs WHERE studentId = ? ORDER BY createdAt DESC'
+  ).all(studentId)
+  return rows as WxLog[]
+}
+
+export function addWxLog(log: Omit<WxLog, 'id'>): number {
+  const stmt = db.prepare(`
+    INSERT INTO wx_logs (studentId, event, detail, createdAt)
+    VALUES (@studentId, @event, @detail, @createdAt)
+  `)
+  return Number(stmt.run(log).lastInsertRowid)
+}
+
+// ═══════════════════════════════════════════
 // 认证相关
 // ═══════════════════════════════════════════
 

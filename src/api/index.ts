@@ -11,6 +11,7 @@ export {
   getLessonsByStudentId,
   getPaymentsByStudentId,
   getStudentPackageStats,
+  getStudentWxLogs,
 } from './students'
 
 export {
