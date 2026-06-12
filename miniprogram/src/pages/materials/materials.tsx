@@ -278,8 +278,17 @@ export default function MaterialsPage() {
                         // 子类型标题：仅当有父级且子标题与父级不同时才显示（避免重复）
                         const subTitle = (mat.parentContent && mat.materialContent && mat.materialContent !== mat.parentContent)
                           ? mat.materialContent : null
-                        // 具体课件名
-                        const itemName = mat.text || mat.fileName || '(无标题)'
+                        // 具体课件名：避免和一级标题/子类型标题重复
+                        const rawName = mat.text || mat.fileName || '(无标题)'
+                        let itemName = rawName
+                        if (itemName === group.parentTitle || (subTitle && itemName === subTitle)) {
+                          // 如果课件名和层级标题重复，尝试用文件名代替
+                          if (mat.fileName && mat.fileName !== rawName && mat.fileName !== group.parentTitle && mat.fileName !== subTitle) {
+                            itemName = mat.fileName
+                          } else {
+                            itemName = '' // 不重复显示了
+                          }
+                        }
                         const fileName = mat.fileName || ''
                         const downloadable = canDownload(mat)
 
@@ -303,12 +312,18 @@ export default function MaterialsPage() {
                             )}
 
                             {/* 具体课件名 + 难度 */}
-                            <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                              <Text style={{ fontSize: '26rpx', color: '#334155', flex: 1 }}>
-                                {mi + 1}. {itemName}
-                              </Text>
-                              {renderDifficulty(mat.difficulty)}
-                            </View>
+                            {itemName ? (
+                              <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={{ fontSize: '26rpx', color: '#334155', flex: 1 }}>
+                                  {mi + 1}. {itemName}
+                                </Text>
+                                {renderDifficulty(mat.difficulty)}
+                              </View>
+                            ) : (
+                              <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                                {renderDifficulty(mat.difficulty)}
+                              </View>
+                            )}
 
                             {/* 附件名称 */}
                             {fileName && (
