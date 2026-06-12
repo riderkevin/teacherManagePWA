@@ -177,6 +177,35 @@ router.get('/materials', wxAuth, (req: Request, res: Response) => {
   res.json(rows)
 })
 
+// ── 获取学生所有课程附件（带课件库分类/难度/层级信息）──
+router.get('/materials-enriched', wxAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
+
+  // 查该学生所有课程ID
+  const lessonRows = db.prepare('SELECT id FROM lessons WHERE studentId = ?').all(studentId) as any[]
+  const lessonIds = lessonRows.map((r) => r.id)
+  if (lessonIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  // JOIN lesson_materials + materials 获取分类/难度/层级
+  const placeholders = lessonIds.map(() => '?').join(',')
+  const rows = db.prepare(`
+    SELECT
+      lm.id, lm.lessonId, lm.materialId, lm.text, lm.fileName, lm.fileData, lm.fileLink,
+      m.category, m.difficulty, m.content AS materialContent, m.parentId,
+      parent.content AS parentContent
+    FROM lesson_materials lm
+    LEFT JOIN materials m ON lm.materialId = m.id
+    LEFT JOIN materials parent ON m.parentId = parent.id
+    WHERE lm.lessonId IN (${placeholders})
+    ORDER BY m.category, m.parentId, m.id
+  `).all(...lessonIds)
+
+  res.json(rows)
+})
+
 // ── 获取单课附件 ──
 router.get('/materials/:lessonId', wxAuth, (req: Request, res: Response) => {
   const studentId = (req as any).studentId

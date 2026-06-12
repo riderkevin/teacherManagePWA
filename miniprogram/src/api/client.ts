@@ -92,6 +92,11 @@ export async function getAllMyMaterials() {
   return apiRequest<any[]>('/api/wx/materials')
 }
 
+// 获取学生所有课程附件（带课件库分类/难度/层级信息，用于课件分类页）
+export async function getMyMaterialsEnriched() {
+  return apiRequest<any[]>('/api/wx/materials-enriched')
+}
+
 // 获取文件JSON接口（课程附件），附带 openid 用于鉴权
 function getFileDataUrl(materialId: number): string {
   const openid = Taro.getStorageSync('wx_openid') || ''
@@ -137,12 +142,41 @@ export async function previewFile(url: string, fileName?: string) {
   } catch (err) {
     console.error('预览文件失败:', err)
     // 降级：复制二进制下载链接
-    const downloadUrl = url.replace('/file-data/', '/file/').replace('/material-file-data/', '/material-file/')
+    const downloadUrl = API_BASE + url.replace('/file-data/', '/file/').replace('/material-file-data/', '/material-file/')
     Taro.setClipboardData({ data: downloadUrl })
     Taro.showModal({
       title: '预览失败',
       content: '小程序内暂不支持预览此文件，下载链接已复制，请在浏览器中粘贴打开下载。',
       showCancel: false,
     })
+  }
+}
+
+// 下载文件到本地：通过JSON接口获取base64 → 写临时文件 → 永久保存
+export async function downloadFileToLocal(url: string, fileName?: string) {
+  try {
+    Taro.showLoading({ title: '下载中…' })
+    const res: any = await apiRequest(url)
+    if (!res || !res.base64) throw new Error('无文件数据')
+
+    const fs = Taro.getFileSystemManager()
+    const ext = res.mimeType?.split('/')[1] || 'bin'
+    const safeName = (res.fileName || fileName || 'file').replace(/[^a-zA-Z0-9._一-鿿-]/g, '_')
+    const tmpPath = `${Taro.env.USER_DATA_PATH}/${safeName}.${ext}`
+
+    const buffer = Taro.base64ToArrayBuffer(res.base64)
+    fs.writeFileSync(tmpPath, buffer)
+
+    Taro.hideLoading()
+    Taro.showToast({ title: '已保存到本地', icon: 'success', duration: 1500 })
+
+    // 下载后自动打开文件，用户可通过右上角菜单保存/分享
+    setTimeout(() => {
+      Taro.openDocument({ filePath: tmpPath, showMenu: true }).catch(() => {})
+    }, 500)
+  } catch (err) {
+    console.error('下载文件失败:', err)
+    Taro.hideLoading()
+    Taro.showToast({ title: '下载失败，请重试', icon: 'error' })
   }
 }
