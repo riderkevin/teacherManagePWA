@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyLessons, getMyProgress, getAllMyMaterials, previewFile } from '../../api/client'
+import { getMyLessons, getMyProgress, getMyMaterialsEnriched, previewFile } from '../../api/client'
 import '../../app.scss'
 
 function getFileDataUrl(id: number) {
@@ -71,7 +71,7 @@ export default function IndexPage() {
       const [allLessons, pg, allMats] = await Promise.all([
         getMyLessons(200),
         getMyProgress(),
-        getAllMyMaterials(),
+        getMyMaterialsEnriched(),
       ])
       // 仅过滤掉放鸽子，保留未上课和已上课
       const filtered = allLessons
