@@ -317,9 +317,9 @@ export function getThisWeekIncome(): number {
   const todayStrMax = todayStr + '￿'
 
   const rows = db.prepare(
-    "SELECT * FROM lessons WHERE startTime >= ? AND startTime <= ? AND status = '已上课'"
+    "SELECT * FROM payments WHERE date >= ? AND date <= ?"
   ).all(mondayStr, todayStrMax) as any[]
-  return rows.reduce((sum, l) => sum + (l.income || 0), 0)
+  return rows.reduce((sum, p) => sum + (p.amount || 0), 0)
 }
 
 export function getThisMonthIncome(): number {
@@ -332,9 +332,9 @@ export function getThisMonthIncome(): number {
   const nowStrMax = nowStr + '￿'
 
   const rows = db.prepare(
-    "SELECT * FROM lessons WHERE startTime >= ? AND startTime <= ? AND status = '已上课'"
+    "SELECT * FROM payments WHERE date >= ? AND date <= ?"
   ).all(firstStr, nowStrMax) as any[]
-  return rows.reduce((sum, l) => sum + (l.income || 0), 0)
+  return rows.reduce((sum, p) => sum + (p.amount || 0), 0)
 }
 
 // ═══════════════════════════════════════════

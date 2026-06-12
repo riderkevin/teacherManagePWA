@@ -234,14 +234,14 @@ export default function Dashboard() {
         <StatCard
           title="本周收入"
           value={weekIncome != null ? `¥${weekIncome}` : '-'}
-          subtitle="已上课收入"
+          subtitle="缴费记录"
           icon={DollarSign}
           color="green"
         />
         <StatCard
           title="本月收入"
           value={monthIncome != null ? `¥${monthIncome}` : '-'}
-          subtitle="已上课收入"
+          subtitle="缴费记录"
           icon={DollarSign}
           color="blue"
         />

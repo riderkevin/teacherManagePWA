@@ -9,10 +9,12 @@ const EMPTY_FORM: PaymentFormData = {
   studentName: '',
   date: '',
   amount: 0,
-  packageLabel: '',
+  packageLabel: '正式课多节一付',
   lessonCount: 10,
   notes: '',
 }
+
+const BILLING_CYCLE_OPTIONS = ['试听课', '正式课单节一付', '正式课多节一付'] as const
 
 interface Props {
   studentId: number
@@ -93,23 +95,37 @@ export default function PaymentModal({ studentId, studentName, payment, onSave, 
             />
           </label>
 
-          {/* 套餐标签 */}
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-slate-700">
-              套餐标签 <span className="text-red-400">*</span>
-            </span>
-            <input
-              type="text"
-              required
-              value={form.packageLabel}
-              onChange={(e) => update('packageLabel', e.target.value)}
-              placeholder="如：正式课一期"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </label>
+          {/* 收费周期 */}
+          <fieldset className="space-y-1.5">
+            <legend className="text-sm font-medium text-slate-700">
+              收费周期 <span className="text-red-400">*</span>
+            </legend>
+            <div className="flex gap-2">
+              {BILLING_CYCLE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    update('packageLabel', option)
+                    // 切换到非"多节一付"时重置节数为1
+                    if (option !== '正式课多节一付') {
+                      update('lessonCount', 1)
+                    }
+                  }}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    form.packageLabel === option
+                      ? 'border-blue-300 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
-          {/* 金额 + 节数 同行 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 缴费金额 */}
+          <div className={form.packageLabel === '正式课多节一付' ? 'grid grid-cols-2 gap-3' : ''}>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700">
                 缴费金额 <span className="text-red-400">*</span>
@@ -119,8 +135,7 @@ export default function PaymentModal({ studentId, studentName, payment, onSave, 
                 <input
                   type="number"
                   required
-                  min="0"
-                  step="100"
+                  min="1"
                   value={form.amount || ''}
                   onChange={(e) => update('amount', Number(e.target.value))}
                   placeholder="0"
@@ -129,21 +144,23 @@ export default function PaymentModal({ studentId, studentName, payment, onSave, 
               </div>
             </label>
 
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700">
-                节数 <span className="text-red-400">*</span>
-              </span>
-              <input
-                type="number"
-                required
-                min="1"
-                step="1"
-                value={form.lessonCount || ''}
-                onChange={(e) => update('lessonCount', Number(e.target.value))}
-                placeholder="10"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </label>
+            {form.packageLabel === '正式课多节一付' && (
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">
+                  节数 <span className="text-red-400">*</span>
+                </span>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  step="1"
+                  value={form.lessonCount || ''}
+                  onChange={(e) => update('lessonCount', Number(e.target.value))}
+                  placeholder="10"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+            )}
           </div>
 
           {/* 备注 */}
