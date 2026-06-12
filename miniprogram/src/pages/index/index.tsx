@@ -119,7 +119,6 @@ export default function IndexPage() {
       {/* 欢迎 */}
       <View style={{ marginBottom: '32rpx' }}>
         <Text className="page-title">你好，{state.studentName}</Text>
-        <Text className="page-subtitle">吉他学习之旅</Text>
       </View>
 
       {/* 学习统计 */}
