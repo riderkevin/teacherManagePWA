@@ -112,10 +112,10 @@ export default function StudentDetailPage() {
 
     // 总课时（已完成时长）
     const totalHours = completedLessons.reduce((sum, l) => sum + l.duration, 0)
-    const totalIncome = lessons.reduce((sum, l) => sum + (l.income || 0), 0)
+    const totalIncome = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) ?? 0
 
     return { total, completed, upcoming, noShow, lastLessonDate, avgPerMonth, totalHours, totalIncome }
-  }, [lessons])
+  }, [lessons, payments])
 
   // 编辑学生
   const handleEdit = async (data: Omit<Student, 'id'>) => {
