@@ -96,11 +96,18 @@ export default function MaterialsPage() {
       if (!grouped[cat]) grouped[cat] = []
       // 搜索过滤
       if (searchText) {
-        const q = searchText.toLowerCase()
-        const haystack = [
-          mat.text, mat.fileName, mat.materialContent, mat.parentContent,
-        ].filter(Boolean).join(' ').toLowerCase()
-        if (!haystack.includes(q)) continue
+        const q = searchText.trim().toLowerCase()
+        if (q) {
+          // 一级标题（用于"其他"类型的回退）
+          const firstTitle = mat.parentContent || mat.materialContent || mat.text || ''
+          // 具体名称
+          const itemName = mat.text || mat.fileName || ''
+          const haystack = [
+            mat.text, mat.fileName, mat.materialContent, mat.parentContent,
+            firstTitle, itemName, mat.category,
+          ].filter(Boolean).join(' ').toLowerCase()
+          if (!haystack.includes(q)) continue
+        }
       }
       grouped[cat].push(mat)
     }
