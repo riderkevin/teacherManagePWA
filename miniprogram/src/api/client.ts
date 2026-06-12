@@ -144,7 +144,7 @@ export async function previewFile(url: string, fileName?: string) {
 
     // base64 → ArrayBuffer → 写文件
     const base64 = res.base64
-    const buffer = Taro.base64ToArrayBuffer(base64)
+    const buffer = base64ToArrayBuffer(base64)
     fs.writeFileSync(tmpPath, buffer)
 
     await Taro.openDocument({ filePath: tmpPath, showMenu: true })
@@ -161,8 +161,35 @@ export async function previewFile(url: string, fileName?: string) {
   }
 }
 
-// 下载文件到本地：通过JSON接口获取base64 → 写临时文件 → 永久保存
+/** base64 转 ArrayBuffer（兼容真机无 Taro.base64ToArrayBuffer 的情况，不使用 atob） */
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  // 1. 优先使用微信原生 API（基础库 2.14+）
+  if (typeof Taro.base64ToArrayBuffer === 'function') {
+    try {
+      return Taro.base64ToArrayBuffer(base64)
+    } catch { /* 降级到手动解码 */ }
+  }
+  // 2. 手动解码 base64（兼容所有环境）
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  let clean = base64.replace(/[^A-Za-z0-9+/=]/g, '')
+  // 补齐 padding
+  while (clean.length % 4 !== 0) clean += '='
+  const bytes: number[] = []
+  for (let i = 0; i < clean.length; i += 4) {
+    const a = chars.indexOf(clean[i])
+    const b = chars.indexOf(clean[i + 1])
+    const c = clean[i + 2] === '=' ? -1 : chars.indexOf(clean[i + 2])
+    const d = clean[i + 3] === '=' ? -1 : chars.indexOf(clean[i + 3])
+    bytes.push((a << 2) | (b >> 4))
+    if (c !== -1) bytes.push(((b & 15) << 4) | (c >> 2))
+    if (d !== -1) bytes.push(((c & 3) << 6) | d)
+  }
+  return new Uint8Array(bytes).buffer
+}
+
+// 下载文件到本地：通过JSON接口获取base64 → 写文件 → 打开
 export async function downloadFileToLocal(url: string, fileName?: string) {
+  let filePath = ''
   try {
     Taro.showLoading({ title: '下载中…' })
     const res: any = await apiRequest(url)
@@ -171,20 +198,38 @@ export async function downloadFileToLocal(url: string, fileName?: string) {
     const fs = Taro.getFileSystemManager()
     const ext = res.mimeType?.split('/')[1] || 'bin'
     const safeName = (res.fileName || fileName || 'file').replace(/[^a-zA-Z0-9._一-鿿-]/g, '_')
-    const tmpPath = `${Taro.env.USER_DATA_PATH}/${safeName}.${ext}`
+    filePath = `${Taro.env.USER_DATA_PATH}/${safeName}.${ext}`
 
-    const buffer = Taro.base64ToArrayBuffer(res.base64)
-    fs.writeFileSync(tmpPath, buffer)
+    const buffer = base64ToArrayBuffer(res.base64)
+    fs.writeFileSync(filePath, buffer)
 
     Taro.hideLoading()
-    Taro.showToast({ title: '已保存到本地', icon: 'success', duration: 1500 })
 
-    // 下载后自动打开文件，用户可通过右上角菜单保存/分享
-    setTimeout(() => {
-      Taro.openDocument({ filePath: tmpPath, showMenu: true }).catch(() => {})
-    }, 500)
+    // 显示保存路径并询问是否打开
+    Taro.showModal({
+      title: '下载完成',
+      content: `已保存至小程序存储目录：\n${filePath}\n\n点击「打开文件」预览，或通过右上角菜单转发给朋友。`,
+      confirmText: '打开文件',
+      cancelText: '关闭',
+      success: (modalRes) => {
+        if (modalRes.confirm) {
+          Taro.openDocument({
+            filePath,
+            showMenu: true,
+            fail: (err) => {
+              console.error('打开文件失败:', err)
+              Taro.showModal({
+                title: '无法预览',
+                content: '此文件格式暂不支持预览，但已保存到小程序存储中。',
+                showCancel: false,
+              })
+            },
+          })
+        }
+      },
+    })
   } catch (err) {
-    console.error('下载文件失败:', err)
+    console.error('下载文件失败:', err, '路径:', filePath)
     Taro.hideLoading()
     Taro.showToast({ title: '下载失败，请重试', icon: 'error' })
   }
