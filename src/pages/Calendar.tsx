@@ -10,6 +10,7 @@ import {
   User,
   Hourglass,
   DollarSign,
+  Search,
 } from 'lucide-react'
 import {
   getAllLessons,
@@ -42,6 +43,7 @@ export default function CalendarPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Lesson | null>(null)
+  const [search, setSearch] = useState('')
 
   const load = async () => {
     const [all, mons] = await Promise.all([getAllLessons(), getLessonMonths()])
@@ -56,11 +58,15 @@ export default function CalendarPage() {
     load()
   }, [])
 
-  // 按选中月份过滤 + 按周分组
+  // 按选中月份 + 学生名称搜索过滤 + 按周分组
   const groupedByWeek = useMemo(() => {
     if (!lessons || !selectedMonth) return []
     const filtered = lessons
-      .filter((l) => l.month === selectedMonth)
+      .filter((l) => {
+        if (l.month !== selectedMonth) return false
+        if (search && !l.studentName.toLowerCase().includes(search.toLowerCase())) return false
+        return true
+      })
       .sort((a, b) => b.startTime.localeCompare(a.startTime))
 
     const map = new Map<string, Lesson[]>()
@@ -70,7 +76,7 @@ export default function CalendarPage() {
       map.set(l.week, arr)
     }
     return [...map.entries()]
-  }, [lessons, selectedMonth])
+  }, [lessons, selectedMonth, search])
 
   // 新增
   const handleAdd = async (data: Omit<Lesson, 'id'>) => {
@@ -180,10 +186,24 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* 学生搜索 */}
+      {lessons && lessons.length > 0 && (
+        <div className="relative max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜索学生名称…"
+            className="w-full rounded-lg border border-slate-300 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+      )}
+
       {/* 按周分组的课程列表 */}
       {selectedMonth && groupedByWeek.length === 0 && (
         <div className="py-16 text-center text-sm text-slate-400">
-          该月份暂无课程
+          {search ? '未找到匹配的课程' : '该月份暂无课程'}
         </div>
       )}
 
