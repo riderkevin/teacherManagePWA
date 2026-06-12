@@ -1,7 +1,6 @@
 export default defineAppConfig({
   pages: [
     'pages/index/index',
-    'pages/lessons/lessons',
     'pages/materials/materials',
     'pages/bind/bind',
     'pages/profile/profile',
@@ -21,10 +20,9 @@ export default defineAppConfig({
     backgroundColor: '#FFFFFF',
     borderStyle: 'white',
     list: [
-      { pagePath: 'pages/index/index', text: '首页' },
-      { pagePath: 'pages/lessons/lessons', text: '课程' },
-      { pagePath: 'pages/materials/materials', text: '课件' },
-      { pagePath: 'pages/profile/profile', text: '我的' },
+      { pagePath: 'pages/index/index', text: '课程', iconPath: 'src/assets/tab-lessons-inactive.png', selectedIconPath: 'src/assets/tab-lessons.png' },
+      { pagePath: 'pages/materials/materials', text: '课件', iconPath: 'src/assets/tab-materials-inactive.png', selectedIconPath: 'src/assets/tab-materials.png' },
+      { pagePath: 'pages/profile/profile', text: '我的', iconPath: 'src/assets/tab-profile-inactive.png', selectedIconPath: 'src/assets/tab-profile.png' },
     ],
   },
 })
