@@ -39,6 +39,15 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
 }
 
 // ── 绑定 ──
+export async function unbind(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiRequest('/api/wx/unbind', { method: 'POST' })
+    return { ok: true }
+  } catch (err: any) {
+    return { ok: false, error: err.message }
+  }
+}
+
 export async function bindWithCode(code: string): Promise<{
   ok: boolean
   studentId: number

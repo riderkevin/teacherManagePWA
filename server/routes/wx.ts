@@ -428,6 +428,14 @@ router.get('/admin/binding/:studentId', authMiddleware, (req: Request, res: Resp
   })
 })
 
+// ── 解除绑定（小程序端，学生自己解绑） ──
+// POST /api/wx/unbind
+router.post('/unbind', wxAuth, (req: Request, res: Response) => {
+  const studentId = (req as any).studentId
+  db.prepare('UPDATE student_wx_bindings SET isBound = 0 WHERE studentId = ?').run(studentId)
+  res.json({ ok: true })
+})
+
 // ── 解除绑定 ──
 // DELETE /api/wx/admin/unbind/:studentId
 router.delete('/admin/unbind/:studentId', authMiddleware, (req: Request, res: Response) => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { checkLogin, type AppState } from '../../utils/auth'
-import { getMyProgress } from '../../api/client'
+import { getMyProgress, unbind } from '../../api/client'
 import '../../app.scss'
 
 export default function ProfilePage() {
@@ -35,8 +35,13 @@ export default function ProfilePage() {
     Taro.showModal({
       title: '解除绑定',
       content: '确定要解除绑定吗？解除后将无法查看课程数据。',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
+          try {
+            await unbind()
+          } catch {
+            // 即使 API 失败也继续清除本地状态
+          }
           Taro.removeStorageSync('bind_info')
           Taro.redirectTo({ url: '/pages/bind/bind' })
         }
