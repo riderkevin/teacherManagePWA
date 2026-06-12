@@ -60,3 +60,16 @@ export {
 } from './auth'
 
 export { setAuthToken, getAuthToken } from './client'
+
+export {
+  getAllBandEvents,
+  addBandEvent,
+  updateBandEvent,
+  deleteBandEvent,
+  getAllBandSongs,
+  addBandSong,
+  updateBandSong,
+  deleteBandSong,
+  getBandEventSongs,
+  setBandEventSongs,
+} from './band'

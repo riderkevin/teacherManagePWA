@@ -581,3 +581,119 @@ export function validateSession(token: string): boolean {
 export function deleteSession(token: string): void {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token)
 }
+
+// ═══════════════════════════════════════════
+// 乐队管理
+// ═══════════════════════════════════════════
+
+export interface BandEvent {
+  id?: number
+  type: string           // '演出' | '排练'
+  title: string
+  date: string           // YYYY/MM/DD
+  startTime: string      // HH:MM
+  endTime: string        // HH:MM
+  location: string
+  notes: string
+  createdAt: string
+}
+
+export interface BandSong {
+  id?: number
+  title: string
+  artist: string
+  duration: string
+  songKey: string
+  notes: string
+}
+
+export interface BandEventSong {
+  id?: number
+  eventId: number
+  songId: number
+  sortOrder: number
+}
+
+// ── 日程 ──
+
+export function getAllBandEvents(): BandEvent[] {
+  return db.prepare('SELECT * FROM band_events ORDER BY date DESC, startTime ASC').all() as BandEvent[]
+}
+
+export function addBandEvent(event: Omit<BandEvent, 'id'>): number {
+  const stmt = db.prepare(`
+    INSERT INTO band_events (type, title, date, startTime, endTime, location, notes, createdAt)
+    VALUES (@type, @title, @date, @startTime, @endTime, @location, @notes, @createdAt)
+  `)
+  return Number(stmt.run(event).lastInsertRowid)
+}
+
+export function updateBandEvent(id: number, changes: Partial<BandEvent>): void {
+  const fields: string[] = []
+  const params: any = { id }
+  for (const [key, value] of Object.entries(changes)) {
+    if (key === 'id') continue
+    fields.push(`${key} = @${key}`)
+    params[key] = value
+  }
+  if (fields.length === 0) return
+  db.prepare(`UPDATE band_events SET ${fields.join(', ')} WHERE id = @id`).run(params)
+}
+
+export function deleteBandEvent(id: number): void {
+  db.prepare('DELETE FROM band_events WHERE id = ?').run(id)
+}
+
+// ── 曲目 ──
+
+export function getAllBandSongs(): BandSong[] {
+  return db.prepare('SELECT * FROM band_songs ORDER BY title').all() as BandSong[]
+}
+
+export function addBandSong(song: Omit<BandSong, 'id'>): number {
+  const stmt = db.prepare(`
+    INSERT INTO band_songs (title, artist, duration, songKey, notes)
+    VALUES (@title, @artist, @duration, @songKey, @notes)
+  `)
+  return Number(stmt.run(song).lastInsertRowid)
+}
+
+export function updateBandSong(id: number, changes: Partial<BandSong>): void {
+  const fields: string[] = []
+  const params: any = { id }
+  for (const [key, value] of Object.entries(changes)) {
+    if (key === 'id') continue
+    fields.push(`${key} = @${key}`)
+    params[key] = value
+  }
+  if (fields.length === 0) return
+  db.prepare(`UPDATE band_songs SET ${fields.join(', ')} WHERE id = @id`).run(params)
+}
+
+export function deleteBandSong(id: number): void {
+  db.prepare('DELETE FROM band_songs WHERE id = ?').run(id)
+}
+
+// ── 曲目单 ──
+
+export function getBandEventSongs(eventId: number): (BandEventSong & { songTitle?: string; songArtist?: string })[] {
+  return db.prepare(`
+    SELECT bes.*, bs.title AS songTitle, bs.artist AS songArtist
+    FROM band_event_songs bes
+    JOIN band_songs bs ON bes.songId = bs.id
+    WHERE bes.eventId = ?
+    ORDER BY bes.sortOrder
+  `).all(eventId) as any[]
+}
+
+export function setBandEventSongs(eventId: number, songIds: number[]): void {
+  const clear = db.prepare('DELETE FROM band_event_songs WHERE eventId = ?')
+  const insert = db.prepare('INSERT INTO band_event_songs (eventId, songId, sortOrder) VALUES (?, ?, ?)')
+  const tx = db.transaction(() => {
+    clear.run(eventId)
+    songIds.forEach((songId, index) => {
+      insert.run(eventId, songId, index + 1)
+    })
+  })
+  tx()
+}

@@ -239,3 +239,40 @@ function buildTotalDisplay(lessons: Lesson[]): string {
   }
   return `总课时${numbers.join('、')}`
 }
+
+// ═══════════════════════════════════════════
+// 乐队管理
+// ═══════════════════════════════════════════
+
+export type BandEventType = '演出' | '排练'
+
+export interface BandEvent {
+  id?: number
+  type: BandEventType
+  title: string
+  date: string           // YYYY/MM/DD
+  startTime: string      // HH:MM
+  endTime: string        // HH:MM
+  location: string
+  notes: string
+  createdAt: string
+}
+
+export interface BandSong {
+  id?: number
+  title: string
+  artist: string
+  duration: string
+  songKey: string
+  notes: string
+}
+
+export interface BandEventSong {
+  id?: number
+  eventId: number
+  songId: number
+  sortOrder: number
+  // JOIN fields
+  songTitle?: string
+  songArtist?: string
+}

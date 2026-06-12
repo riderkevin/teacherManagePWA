@@ -7,6 +7,8 @@ import {
   Music,
   RefreshCw,
   LogOut,
+  MicVocal,
+  ListMusic,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -16,6 +18,11 @@ const menuItems = [
   { path: '/students', label: '学生档案', icon: Users },
   { path: '/materials', label: '课件汇总', icon: FolderOpen },
   { path: '/sync', label: '飞书同步', icon: RefreshCw },
+]
+
+const bandItems = [
+  { path: '/band-events', label: '乐队日程', icon: MicVocal },
+  { path: '/band-songs', label: '曲目库', icon: ListMusic },
 ]
 
 export default function Sidebar() {
@@ -41,6 +48,27 @@ export default function Sidebar() {
             key={item.path}
             to={item.path}
             end={item.path === '/'}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-blue-500/25 text-white'
+                  : 'text-blue-100/70 hover:bg-white/10 hover:text-white'
+              }`
+            }
+          >
+            <item.icon className="h-4.5 w-4.5" />
+            {item.label}
+          </NavLink>
+        ))}
+
+        {/* 乐队管理分组 */}
+        <div className="mt-4 mb-1 px-3">
+          <p className="text-xs font-semibold text-blue-200/50 uppercase tracking-wider">乐队管理</p>
+        </div>
+        {bandItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive

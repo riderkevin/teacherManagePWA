@@ -123,6 +123,38 @@ db.exec(`
     createdAt TEXT NOT NULL DEFAULT '',
     FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
   );
-`)
 
+  -- 乐队日程（演出/排练）
+  CREATE TABLE IF NOT EXISTS band_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL DEFAULT '排练',
+    title TEXT NOT NULL DEFAULT '',
+    date TEXT NOT NULL DEFAULT '',
+    startTime TEXT NOT NULL DEFAULT '',
+    endTime TEXT NOT NULL DEFAULT '',
+    location TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL DEFAULT ''
+  );
+
+  -- 乐队曲目库
+  CREATE TABLE IF NOT EXISTS band_songs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    artist TEXT NOT NULL DEFAULT '',
+    duration TEXT NOT NULL DEFAULT '',
+    songKey TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT ''
+  );
+
+  -- 演出曲目单（关联表）
+  CREATE TABLE IF NOT EXISTS band_event_songs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    eventId INTEGER NOT NULL,
+    songId INTEGER NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (eventId) REFERENCES band_events(id) ON DELETE CASCADE,
+    FOREIGN KEY (songId) REFERENCES band_songs(id) ON DELETE CASCADE
+  );
+`)
 export default db
