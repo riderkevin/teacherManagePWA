@@ -134,6 +134,8 @@ db.exec(`
     endTime TEXT NOT NULL DEFAULT '',
     duration REAL NOT NULL DEFAULT 2,
     location TEXT NOT NULL DEFAULT '',
+    address TEXT NOT NULL DEFAULT '',
+    language TEXT NOT NULL DEFAULT '日文',
     notes TEXT NOT NULL DEFAULT '',
     createdAt TEXT NOT NULL DEFAULT ''
   );
@@ -190,7 +192,9 @@ db.exec(`
 // ── 运行时迁移：为已有数据库添加新列 ──
 try {
   db.exec(`ALTER TABLE band_events ADD COLUMN duration REAL NOT NULL DEFAULT 2`)
-} catch { /* 列已存在则忽略 */ }
+} catch { /* ignore */ }
+try { db.exec(`ALTER TABLE band_events ADD COLUMN address TEXT NOT NULL DEFAULT ''`) } catch { /* ignore */ }
+try { db.exec(`ALTER TABLE band_events ADD COLUMN language TEXT NOT NULL DEFAULT '日文'`) } catch { /* ignore */ }
 
 // band_songs 新增列
 for (const col of ['ip', 'version', 'arrangement', 'bpm', 'sheetFileName', 'sheetData']) {

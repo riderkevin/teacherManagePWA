@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Loader2, CalendarDays, Edit3, Trash2, Music } from 'lucide-react'
+import { Plus, Search, Loader2, Edit3, Trash2, Music, MapPin, ChevronDown, ChevronUp } from 'lucide-react'
 import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent, getBandEventSongs, setBandEventSongs, getAllBandSongs } from '../api'
 import type { BandEvent, BandSong, BandEventSong } from '../types'
 import BandEventModal from '../components/BandEventModal'
@@ -14,6 +14,7 @@ export default function BandPerformances() {
   const [deleteTarget, setDeleteTarget] = useState<BandEvent | null>(null)
   const [setlistOpen, setSetlistOpen] = useState<number | null>(null)
   const [selectedSongs, setSelectedSongs] = useState<number[]>([])
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   const load = () => {
     getAllBandEvents().then(setEvents)
@@ -21,12 +22,20 @@ export default function BandPerformances() {
   }
   useEffect(() => { load() }, [])
 
-  // 加载曲目单
   const loadSetlist = async (eventId: number) => {
     const es = await getBandEventSongs(eventId)
     setEventSongs((prev) => ({ ...prev, [eventId]: es }))
     setSelectedSongs(es.map((e) => e.songId))
     setSetlistOpen(eventId)
+  }
+
+  const toggleExpand = (id: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const handleAdd = async (data: Omit<BandEvent, 'id'>) => {
@@ -57,16 +66,18 @@ export default function BandPerformances() {
     setSetlistOpen(null)
   }
 
-  // 只显示演出
-  const performances = events?.filter((e) => e.type === '演出') ?? []
+  // 只显示演出，按日期倒序
+  const performances = (events ?? [])
+    .filter((e) => e.type === '演出')
+    .sort((a, b) => b.date.localeCompare(a.date))
 
   const filtered = performances.filter((e) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return [e.title, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
+    return [e.title, e.location, e.address, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
-  // 格式化日期：2026/5/21（兼容 YYYY/MM/DD 和 YYYY-MM-DD）
+  // 格式化日期：2026/8/14
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
     const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-')
@@ -116,7 +127,6 @@ export default function BandPerformances() {
       {/* Empty */}
       {performances.length === 0 && events !== null && (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <CalendarDays className="h-12 w-12 mb-3" />
           <p className="text-sm">暂无演出日程</p>
           <button onClick={() => { setEditing(null); setModalOpen(true) }} className="mt-3 text-sm text-blue-600 hover:text-blue-700">
             添加第一个演出
@@ -124,45 +134,44 @@ export default function BandPerformances() {
         </div>
       )}
 
-      {/* Event list */}
+      {/* Performance list */}
       {filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((event) => {
             const setlist = eventSongs[event.id!]
+            const isExpanded = expanded.has(event.id!)
 
             return (
               <div
                 key={event.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
               >
-                <div className="flex items-start justify-between">
+                {/* 一级信息 */}
+                <div className="flex items-start justify-between p-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
-                        🎸 演出
-                      </span>
-                      <h4 className="font-semibold text-slate-900">{event.title}</h4>
+                    {/* 日期-演出名称 */}
+                    <h4 className="font-semibold text-slate-900">
+                      {formatDate(event.date)} {event.title}
+                    </h4>
+                    <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500">
+                      {/* 时间 */}
+                      {event.startTime && (
+                        <span>{event.startTime}{event.endTime ? `-${event.endTime}` : ''}</span>
+                      )}
+                      {/* 演出地点 */}
+                      {event.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                          {event.location}
+                        </span>
+                      )}
+                      {/* 演出地址 */}
+                      {event.address && (
+                        <span className="text-slate-400 truncate max-w-[200px]">{event.address}</span>
+                      )}
                     </div>
-                    <div className="mt-2 space-y-1 text-sm text-slate-500">
-                      <div>演出日期：{formatDate(event.date)}</div>
-                      <div>演出时间：{event.startTime || '-'}-{event.endTime || '-'}</div>
-                      {event.duration > 0 && <div>演出时长：{event.duration} 小时</div>}
-                      {event.location && <div>演出地点：{event.location}</div>}
-                      {event.notes && <div>备注：{event.notes}</div>}
-                    </div>
-                    {/* 曲目单预览 */}
-                    {setlist && setlist.length > 0 && (
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        {setlist.map((es, idx) => (
-                          <span key={es.id} className="text-xs bg-slate-100 text-slate-500 rounded px-2 py-0.5">
-                            {idx + 1}. {es.songTitle}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                  <div className="flex items-center gap-1 ml-2 shrink-0">
-                    {/* 曲目单按钮 */}
+                  <div className="flex items-center gap-1 ml-3 shrink-0">
                     <button
                       onClick={() => loadSetlist(event.id!)}
                       className="rounded-lg p-1.5 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition-colors"
@@ -182,8 +191,45 @@ export default function BandPerformances() {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
+                    <button
+                      onClick={() => toggleExpand(event.id!)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
                 </div>
+
+                {/* 二级信息（可折叠） */}
+                {isExpanded && (
+                  <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2">
+                    {/* 演出曲目 */}
+                    <div className="text-sm">
+                      <span className="text-slate-400">演出曲目：</span>
+                      {setlist && setlist.length > 0 ? (
+                        <span className="text-slate-700">
+                          {setlist.map((es, idx) => (
+                            <span key={es.id}>
+                              {idx > 0 && '、'}{es.songTitle}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">未设置</span>
+                      )}
+                    </div>
+                    {/* 演出语言 */}
+                    <div className="text-sm">
+                      <span className="text-slate-400">演出语言：</span>
+                      <span className="text-slate-700">{event.language || '日文'}</span>
+                    </div>
+                    {/* 备注 */}
+                    <div className="text-sm">
+                      <span className="text-slate-400">备注：</span>
+                      <span className="text-slate-700">{event.notes || '-'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}

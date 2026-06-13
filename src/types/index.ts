@@ -274,6 +274,10 @@ export interface WxLog {
 
 export type BandEventType = '演出' | '排练'
 
+export type PerformanceLanguage = '日文' | '中文' | '英文' | '其他'
+
+export const PERFORMANCE_LANGUAGES: PerformanceLanguage[] = ['日文', '中文', '英文', '其他']
+
 export interface BandEvent {
   id?: number
   type: BandEventType
@@ -282,7 +286,9 @@ export interface BandEvent {
   startTime: string      // HH:MM
   endTime: string        // HH:MM
   duration: number       // 时长（小时）
-  location: string
+  location: string       // 演出地点（场地名称）
+  address: string        // 演出地址（详细地址）
+  language: PerformanceLanguage
   notes: string
   createdAt: string
 }

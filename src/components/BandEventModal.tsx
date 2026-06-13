@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { BandEvent, BandEventType } from '../types'
+import { PERFORMANCE_LANGUAGES } from '../types'
 
 type FormData = Omit<BandEvent, 'id'>
 
@@ -12,6 +13,8 @@ const EMPTY: FormData = {
   endTime: '22:00',
   duration: 2,
   location: '',
+  address: '',
+  language: '日文',
   notes: '',
   createdAt: new Date().toISOString(),
 }
@@ -172,15 +175,53 @@ export default function BandEventModal({ event, defaultType, simplified, onSave,
             </label>
 
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">地点</span>
+              <span className="text-sm font-medium text-slate-700">
+                {form.type === '演出' ? '演出地点' : '地点'}
+              </span>
               <input
                 type="text"
                 value={form.location}
                 onChange={(e) => update('location', e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="如：排练房 / XX Livehouse"
+                placeholder={form.type === '演出' ? '如：MAO Livehouse' : '如：排练房 / XX Livehouse'}
               />
             </label>
+
+            {/* 演出特有字段 */}
+            {form.type === '演出' && (
+              <>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-slate-700">演出地址</span>
+                  <input
+                    type="text"
+                    value={form.address}
+                    onChange={(e) => update('address', e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="如：上海市黄浦区重庆南路308号"
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-slate-700">演出语言</span>
+                  <div className="flex gap-2">
+                    {PERFORMANCE_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => update('language', lang)}
+                        className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                          form.language === lang
+                            ? 'border-rose-300 bg-rose-50 text-rose-700'
+                            : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+              </>
+            )}
 
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">备注</span>
