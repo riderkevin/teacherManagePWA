@@ -78,6 +78,7 @@ export interface BackupData {
   materials: Material[]
   payments?: Payment[]
   lessonMaterials?: LessonMaterial[]
+  cloudFiles?: CloudFile[]
 }
 
 // ── 辅助：将 SQLite 行转为前端对象 ──
@@ -473,21 +474,24 @@ export function exportAllData(): BackupData {
   const materials = db.prepare('SELECT * FROM materials').all().map(rowToMaterial)
   const payments = db.prepare('SELECT * FROM payments').all().map(rowToPayment)
   const lessonMaterials = db.prepare('SELECT * FROM lesson_materials').all().map(rowToLessonMaterial)
+  const cloudFiles = db.prepare('SELECT * FROM cloud_files').all() as CloudFile[]
 
   return {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     students,
     lessons,
     materials,
     payments,
     lessonMaterials,
+    cloudFiles,
   }
 }
 
 export function importAllData(data: BackupData): void {
   const clearAll = db.transaction(() => {
     db.prepare('DELETE FROM lesson_materials').run()
+    db.prepare('DELETE FROM cloud_files').run()
     db.prepare('DELETE FROM payments').run()
     db.prepare('DELETE FROM lessons').run()
     db.prepare('DELETE FROM materials').run()
@@ -539,8 +543,61 @@ export function importAllData(data: BackupData): void {
         insertLM.run(lm)
       }
     }
+
+    if (data.cloudFiles?.length) {
+      const insertCF = db.prepare(`
+        INSERT INTO cloud_files (title, category, fileName, fileData, fileLink, notes, createdAt)
+        VALUES (@title, @category, @fileName, @fileData, @fileLink, @notes, @createdAt)
+      `)
+      for (const cf of data.cloudFiles) {
+        insertCF.run(cf)
+      }
+    }
   })
   importAll()
+}
+
+// ═══════════════════════════════════════════
+// 乐队网盘资源
+// ═══════════════════════════════════════════
+
+export interface CloudFile {
+  id?: number
+  title: string
+  category: string
+  fileName: string
+  fileData: string
+  fileLink: string
+  notes: string
+  createdAt: string
+}
+
+export function getAllCloudFiles(): CloudFile[] {
+  return db.prepare('SELECT * FROM cloud_files ORDER BY createdAt DESC').all() as CloudFile[]
+}
+
+export function addCloudFile(file: Omit<CloudFile, 'id'>): number {
+  const stmt = db.prepare(`
+    INSERT INTO cloud_files (title, category, fileName, fileData, fileLink, notes, createdAt)
+    VALUES (@title, @category, @fileName, @fileData, @fileLink, @notes, @createdAt)
+  `)
+  return Number(stmt.run(file).lastInsertRowid)
+}
+
+export function updateCloudFile(id: number, changes: Partial<CloudFile>): void {
+  const fields: string[] = []
+  const params: any = { id }
+  for (const [key, value] of Object.entries(changes)) {
+    if (key === 'id') continue
+    fields.push(`${key} = @${key}`)
+    params[key] = value
+  }
+  if (fields.length === 0) return
+  db.prepare(`UPDATE cloud_files SET ${fields.join(', ')} WHERE id = @id`).run(params)
+}
+
+export function deleteCloudFile(id: number): void {
+  db.prepare('DELETE FROM cloud_files WHERE id = ?').run(id)
 }
 
 // ═══════════════════════════════════════════

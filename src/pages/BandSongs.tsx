@@ -45,7 +45,7 @@ export default function BandSongs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-slate-900">曲目库</h2>
+          <h2 className="text-2xl font-bold text-slate-900">排练歌单</h2>
           {songs && (
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm text-slate-500">
               {songs.length}
@@ -67,7 +67,7 @@ export default function BandSongs() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索曲目或作者..."
+          placeholder="搜索歌单曲目..."
           className="w-full rounded-lg border border-slate-300 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>

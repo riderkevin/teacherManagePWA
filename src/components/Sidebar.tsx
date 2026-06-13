@@ -9,6 +9,8 @@ import {
   LogOut,
   MicVocal,
   ListMusic,
+  FolderArchive,
+  Drum,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -21,8 +23,10 @@ const menuItems = [
 ]
 
 const bandItems = [
-  { path: '/band-events', label: '乐队日程', icon: MicVocal },
-  { path: '/band-songs', label: '曲目库', icon: ListMusic },
+  { path: '/band-performances', label: '演出日程', icon: MicVocal },
+  { path: '/band-rehearsals', label: '排练日程', icon: Drum },
+  { path: '/band-songs', label: '排练歌单', icon: ListMusic },
+  { path: '/band-resources', label: '各类资料与网盘', icon: FolderArchive },
 ]
 
 export default function Sidebar() {

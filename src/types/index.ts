@@ -240,6 +240,25 @@ function buildTotalDisplay(lessons: Lesson[]): string {
   return `总课时${numbers.join('、')}`
 }
 
+// ── 乐队网盘资源 ──
+
+export type CloudFileCategory = '乐谱' | '音频' | '文档' | '伴奏' | '其他'
+
+export const CLOUD_FILE_CATEGORIES: CloudFileCategory[] = [
+  '乐谱', '音频', '文档', '伴奏', '其他',
+]
+
+export interface CloudFile {
+  id?: number
+  title: string
+  category: CloudFileCategory
+  fileName: string
+  fileData: string
+  fileLink: string
+  notes: string
+  createdAt: string
+}
+
 // 小程序浏览日志
 export interface WxLog {
   id?: number

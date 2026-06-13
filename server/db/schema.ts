@@ -157,6 +157,18 @@ db.exec(`
     FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
   );
 
+  -- 乐队网盘资源
+  CREATE TABLE IF NOT EXISTS cloud_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT '其他',
+    fileName TEXT NOT NULL DEFAULT '',
+    fileData TEXT NOT NULL DEFAULT '',
+    fileLink TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL DEFAULT ''
+  );
+
   -- 演出曲目单（关联表）
   CREATE TABLE IF NOT EXISTS band_event_songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

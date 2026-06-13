@@ -7,8 +7,10 @@ import Students from './pages/Students'
 import StudentDetail from './pages/StudentDetail'
 import Materials from './pages/Materials'
 import Sync from './pages/Sync'
-import BandEvents from './pages/BandEvents'
+import BandPerformances from './pages/BandPerformances'
+import BandRehearsals from './pages/BandRehearsals'
 import BandSongs from './pages/BandSongs'
+import BandResources from './pages/BandResources'
 import Login from './pages/Login'
 import { Loader2 } from 'lucide-react'
 
@@ -37,8 +39,10 @@ function AppGate() {
           <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/materials" element={<Materials />} />
           <Route path="/sync" element={<Sync />} />
-          <Route path="/band-events" element={<BandEvents />} />
+          <Route path="/band-performances" element={<BandPerformances />} />
+          <Route path="/band-rehearsals" element={<BandRehearsals />} />
           <Route path="/band-songs" element={<BandSongs />} />
+          <Route path="/band-resources" element={<BandResources />} />
         </Route>
       </Routes>
     </BrowserRouter>

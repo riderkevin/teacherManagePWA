@@ -74,3 +74,10 @@ export {
   getBandEventSongs,
   setBandEventSongs,
 } from './band'
+
+export {
+  getAllCloudFiles,
+  addCloudFile,
+  updateCloudFile,
+  deleteCloudFile,
+} from './cloudFiles'

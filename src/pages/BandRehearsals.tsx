@@ -4,7 +4,7 @@ import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent, getBa
 import type { BandEvent, BandSong, BandEventSong } from '../types'
 import BandEventModal from '../components/BandEventModal'
 
-export default function BandEvents() {
+export default function BandRehearsals() {
   const [events, setEvents] = useState<BandEvent[] | null>(null)
   const [songs, setSongs] = useState<BandSong[]>([])
   const [eventSongs, setEventSongs] = useState<Record<number, BandEventSong[]>>({})
@@ -52,17 +52,19 @@ export default function BandEvents() {
   const handleSaveSetlist = async () => {
     if (setlistOpen === null) return
     await setBandEventSongs(setlistOpen, selectedSongs)
-    // 重新加载曲目单
     const es = await getBandEventSongs(setlistOpen)
     setEventSongs((prev) => ({ ...prev, [setlistOpen]: es }))
     setSetlistOpen(null)
   }
 
-  const filtered = events?.filter((e) => {
+  // 只显示排练
+  const rehearsals = events?.filter((e) => e.type === '排练') ?? []
+
+  const filtered = rehearsals.filter((e) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return [e.title, e.location, e.type, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
-  }) ?? []
+    return [e.title, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
+  })
 
   // 格式化日期
   const formatDate = (dateStr: string) => {
@@ -80,10 +82,10 @@ export default function BandEvents() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-slate-900">乐队日程</h2>
+          <h2 className="text-2xl font-bold text-slate-900">排练日程</h2>
           {events && (
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm text-slate-500">
-              {events.length}
+              {rehearsals.length}
             </span>
           )}
         </div>
@@ -91,7 +93,7 @@ export default function BandEvents() {
           onClick={() => { setEditing(null); setModalOpen(true) }}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
-          <Plus className="h-4 w-4" /> 新增日程
+          <Plus className="h-4 w-4" /> 新增排练
         </button>
       </div>
 
@@ -102,7 +104,7 @@ export default function BandEvents() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索演出或排练..."
+          placeholder="搜索排练..."
           className="w-full rounded-lg border border-slate-300 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
@@ -115,12 +117,12 @@ export default function BandEvents() {
       )}
 
       {/* Empty */}
-      {events?.length === 0 && (
+      {rehearsals.length === 0 && events !== null && (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <CalendarDays className="h-12 w-12 mb-3" />
-          <p className="text-sm">暂无乐队日程</p>
+          <p className="text-sm">暂无排练日程</p>
           <button onClick={() => { setEditing(null); setModalOpen(true) }} className="mt-3 text-sm text-blue-600 hover:text-blue-700">
-            添加第一个日程
+            添加第一个排练
           </button>
         </div>
       )}
@@ -129,7 +131,6 @@ export default function BandEvents() {
       {filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((event) => {
-            const isGig = event.type === '演出'
             const setlist = eventSongs[event.id!]
 
             return (
@@ -140,10 +141,8 @@ export default function BandEvents() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        isGig ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {isGig ? '🎸 演出' : '🥁 排练'}
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                        🥁 排练
                       </span>
                       <h4 className="font-semibold text-slate-900">{event.title}</h4>
                     </div>
@@ -203,7 +202,7 @@ export default function BandEvents() {
           <div className="fixed inset-0 bg-black/40" onClick={() => setSetlistOpen(null)} />
           <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
             <h4 className="text-lg font-semibold text-slate-900">编辑曲目单</h4>
-            <p className="text-sm text-slate-500 mt-1">勾选并排序演出曲目</p>
+            <p className="text-sm text-slate-500 mt-1">勾选并排序排练曲目</p>
             <div className="mt-4 space-y-1 max-h-60 overflow-y-auto">
               {songs.map((song) => {
                 const checked = selectedSongs.includes(song.id!)
@@ -246,6 +245,7 @@ export default function BandEvents() {
       {modalOpen && (
         <BandEventModal
           event={editing}
+          defaultType="排练"
           onSave={(data) => { editing ? handleEdit(data) : handleAdd(data) }}
           onClose={() => { setModalOpen(false); setEditing(null) }}
         />
@@ -258,7 +258,7 @@ export default function BandEvents() {
           <div className="relative z-10 w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
             <h4 className="text-lg font-semibold text-slate-900">确认删除</h4>
             <p className="mt-2 text-sm text-slate-600">
-              确定要删除「{deleteTarget.title}」吗？关联的曲目单也会被删除，此操作不可撤销。
+              确定要删除排练「{deleteTarget.title}」吗？关联的曲目单也会被删除，此操作不可撤销。
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <button onClick={() => setDeleteTarget(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">

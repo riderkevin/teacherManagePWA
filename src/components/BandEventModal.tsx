@@ -17,11 +17,12 @@ const EMPTY: FormData = {
 
 interface Props {
   event?: BandEvent | null
+  defaultType?: BandEventType
   onSave: (data: FormData) => void
   onClose: () => void
 }
 
-export default function BandEventModal({ event, onSave, onClose }: Props) {
+export default function BandEventModal({ event, defaultType, onSave, onClose }: Props) {
   const isEdit = !!event
   const [form, setForm] = useState<FormData>(EMPTY)
 
@@ -30,9 +31,9 @@ export default function BandEventModal({ event, onSave, onClose }: Props) {
       const { id, ...data } = event
       setForm(data)
     } else {
-      setForm({ ...EMPTY, createdAt: new Date().toISOString() })
+      setForm({ ...EMPTY, type: defaultType || '排练', createdAt: new Date().toISOString() })
     }
-  }, [event])
+  }, [event, defaultType])
 
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
