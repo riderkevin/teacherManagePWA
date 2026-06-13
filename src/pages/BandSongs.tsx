@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Loader2, Music, Edit3, Trash2 } from 'lucide-react'
+import { Plus, Search, Loader2, Music, Edit3, Trash2, FileText } from 'lucide-react'
 import { getAllBandSongs, addBandSong, updateBandSong, deleteBandSong } from '../api'
 import type { BandSong } from '../types'
 import BandSongModal from '../components/BandSongModal'
@@ -37,8 +37,18 @@ export default function BandSongs() {
   const filtered = songs?.filter((s) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return [s.title, s.artist, s.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
+    return [s.title, s.artist, s.ip, s.bpm, s.songKey, s.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   }) ?? []
+
+  // 打开曲谱附件
+  const openSheet = (song: BandSong) => {
+    if (song.sheetData) {
+      const w = window.open('', '_blank')
+      if (w) {
+        w.document.write(`<iframe src="${song.sheetData}" style="width:100%;height:100%;border:none"></iframe>`)
+      }
+    }
+  }
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -67,7 +77,7 @@ export default function BandSongs() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="搜索歌单曲目..."
+          placeholder="搜索歌名、歌手、IP…"
           className="w-full rounded-lg border border-slate-300 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
@@ -109,9 +119,7 @@ export default function BandSongs() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-slate-900 truncate">{song.title}</h4>
-                  {song.artist && (
-                    <p className="text-sm text-slate-500 mt-0.5">{song.artist}</p>
-                  )}
+                  {song.artist && <p className="text-sm text-slate-500 mt-0.5">{song.artist}</p>}
                 </div>
                 <div className="flex items-center gap-1 ml-2 shrink-0">
                   <button
@@ -128,10 +136,38 @@ export default function BandSongs() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 mt-3 text-xs text-slate-400">
-                {song.songKey && <span className="bg-slate-100 rounded px-2 py-0.5">{song.songKey}</span>}
+
+              {/* 字段标签行 */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                {song.ip && (
+                  <span className="text-xs bg-violet-50 text-violet-600 rounded px-2 py-0.5">{song.ip}</span>
+                )}
+                {song.version && (
+                  <span className="text-xs bg-amber-50 text-amber-600 rounded px-2 py-0.5">{song.version}</span>
+                )}
+                {song.arrangement && (
+                  <span className="text-xs bg-emerald-50 text-emerald-600 rounded px-2 py-0.5">{song.arrangement}</span>
+                )}
+              </div>
+
+              {/* 详细信息 */}
+              <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                {song.bpm && <span>BPM {song.bpm}</span>}
+                {song.songKey && <span className="bg-slate-100 rounded px-1.5 py-0.5">{song.songKey}</span>}
                 {song.duration && <span>{song.duration}</span>}
               </div>
+
+              {/* 曲谱附件 */}
+              {song.sheetFileName && (
+                <button
+                  onClick={() => openSheet(song)}
+                  className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 rounded px-2 py-1 hover:bg-blue-100 transition-colors"
+                >
+                  <FileText className="h-3 w-3" />
+                  {song.sheetFileName}
+                </button>
+              )}
+
               {song.notes && (
                 <p className="text-xs text-slate-400 mt-2 line-clamp-2">{song.notes}</p>
               )}

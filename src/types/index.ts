@@ -287,12 +287,24 @@ export interface BandEvent {
   createdAt: string
 }
 
+export type SongVersion = '原唱' | '翻唱版'
+export type SongArrangement = '乐队' | '不插电'
+
+export const SONG_VERSIONS: SongVersion[] = ['原唱', '翻唱版']
+export const SONG_ARRANGEMENTS: SongArrangement[] = ['乐队', '不插电']
+
 export interface BandSong {
   id?: number
   title: string
   artist: string
+  ip: string            // 所属IP
+  version: SongVersion  // 歌曲版本
+  arrangement: SongArrangement  // 排练版本
+  bpm: string           // BPM
+  songKey: string       // 调
+  sheetFileName: string // 曲谱附件文件名
+  sheetData: string     // 曲谱附件 base64
   duration: string
-  songKey: string
   notes: string
 }
 

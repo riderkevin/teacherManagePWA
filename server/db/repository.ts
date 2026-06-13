@@ -687,8 +687,14 @@ export interface BandSong {
   id?: number
   title: string
   artist: string
-  duration: string
+  ip: string
+  version: string
+  arrangement: string
+  bpm: string
   songKey: string
+  sheetFileName: string
+  sheetData: string
+  duration: string
   notes: string
 }
 
@@ -737,8 +743,8 @@ export function getAllBandSongs(): BandSong[] {
 
 export function addBandSong(song: Omit<BandSong, 'id'>): number {
   const stmt = db.prepare(`
-    INSERT INTO band_songs (title, artist, duration, songKey, notes)
-    VALUES (@title, @artist, @duration, @songKey, @notes)
+    INSERT INTO band_songs (title, artist, ip, version, arrangement, bpm, songKey, sheetFileName, sheetData, duration, notes)
+    VALUES (@title, @artist, @ip, @version, @arrangement, @bpm, @songKey, @sheetFileName, @sheetData, @duration, @notes)
   `)
   return Number(stmt.run(song).lastInsertRowid)
 }

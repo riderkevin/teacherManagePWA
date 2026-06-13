@@ -143,8 +143,14 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL DEFAULT '',
     artist TEXT NOT NULL DEFAULT '',
-    duration TEXT NOT NULL DEFAULT '',
+    ip TEXT NOT NULL DEFAULT '',
+    version TEXT NOT NULL DEFAULT '',
+    arrangement TEXT NOT NULL DEFAULT '',
+    bpm TEXT NOT NULL DEFAULT '',
     songKey TEXT NOT NULL DEFAULT '',
+    sheetFileName TEXT NOT NULL DEFAULT '',
+    sheetData TEXT NOT NULL DEFAULT '',
+    duration TEXT NOT NULL DEFAULT '',
     notes TEXT NOT NULL DEFAULT ''
   );
 
@@ -185,5 +191,10 @@ db.exec(`
 try {
   db.exec(`ALTER TABLE band_events ADD COLUMN duration REAL NOT NULL DEFAULT 2`)
 } catch { /* 列已存在则忽略 */ }
+
+// band_songs 新增列
+for (const col of ['ip', 'version', 'arrangement', 'bpm', 'sheetFileName', 'sheetData']) {
+  try { db.exec(`ALTER TABLE band_songs ADD COLUMN ${col} TEXT NOT NULL DEFAULT ''`) } catch { /* ignore */ }
+}
 
 export default db
