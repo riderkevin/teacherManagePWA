@@ -154,10 +154,6 @@ export default function BandPerformances() {
                       {formatDate(event.date)} {event.title}
                     </h4>
                     <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500">
-                      {/* 时间 */}
-                      {event.startTime && (
-                        <span>{event.startTime}{event.endTime ? `-${event.endTime}` : ''}</span>
-                      )}
                       {/* 演出地点 */}
                       {event.location && (
                         <span className="flex items-center gap-1">
@@ -286,6 +282,8 @@ export default function BandPerformances() {
         <BandEventModal
           event={editing}
           defaultType="演出"
+          hideTypeToggle
+          hideTimeFields
           onSave={(data) => { editing ? handleEdit(data) : handleAdd(data) }}
           onClose={() => { setModalOpen(false); setEditing(null) }}
         />

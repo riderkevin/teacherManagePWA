@@ -29,12 +29,15 @@ const REHEARSAL_DEFAULTS = {
 interface Props {
   event?: BandEvent | null
   defaultType?: BandEventType
-  simplified?: boolean  // 简化模式：隐藏类型切换和标题，用于排练日程
+  simplified?: boolean   // 排练简化：隐藏类型切换 + 标题
+  hideTypeToggle?: boolean  // 隐藏类型切换
+  hideTimeFields?: boolean  // 隐藏开始/结束时间 + 时长
   onSave: (data: FormData) => void
   onClose: () => void
 }
 
-export default function BandEventModal({ event, defaultType, simplified, onSave, onClose }: Props) {
+export default function BandEventModal({ event, defaultType, simplified, hideTypeToggle, hideTimeFields, onSave, onClose }: Props) {
+  const hideType = simplified || hideTypeToggle
   const isEdit = !!event
   const [form, setForm] = useState<FormData>(EMPTY)
 
@@ -78,8 +81,8 @@ export default function BandEventModal({ event, defaultType, simplified, onSave,
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
-          {/* 类型切换（简化模式隐藏） */}
-          {!simplified && (
+          {/* 类型切换 */}
+          {!hideType && (
             <div className="flex gap-3">
               {(['演出', '排练'] as BandEventType[]).map((t) => (
                 <button
@@ -137,42 +140,46 @@ export default function BandEventModal({ event, defaultType, simplified, onSave,
               />
             </label>
 
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">开始时间</span>
-                <input
-                  type="time"
-                  value={form.startTime}
-                  onChange={(e) => update('startTime', e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">结束时间</span>
-                <input
-                  type="time"
-                  value={form.endTime}
-                  onChange={(e) => update('endTime', e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
-            </div>
+            {!hideTimeFields && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-slate-700">开始时间</span>
+                    <input
+                      type="time"
+                      value={form.startTime}
+                      onChange={(e) => update('startTime', e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-slate-700">结束时间</span>
+                    <input
+                      type="time"
+                      value={form.endTime}
+                      onChange={(e) => update('endTime', e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
 
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">
-                时长（小时） <span className="text-red-400">*</span>
-              </span>
-              <input
-                type="number"
-                required
-                min="0"
-                step="any"
-                value={form.duration}
-                onChange={(e) => update('duration', Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="如：2"
-              />
-            </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-slate-700">
+                    时长（小时） <span className="text-red-400">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="any"
+                    value={form.duration}
+                    onChange={(e) => update('duration', Number(e.target.value))}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="如：2"
+                  />
+                </label>
+              </>
+            )}
 
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">
