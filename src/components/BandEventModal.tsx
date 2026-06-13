@@ -26,11 +26,12 @@ const REHEARSAL_DEFAULTS = {
 interface Props {
   event?: BandEvent | null
   defaultType?: BandEventType
+  simplified?: boolean  // 简化模式：隐藏类型切换和标题，用于排练日程
   onSave: (data: FormData) => void
   onClose: () => void
 }
 
-export default function BandEventModal({ event, defaultType, onSave, onClose }: Props) {
+export default function BandEventModal({ event, defaultType, simplified, onSave, onClose }: Props) {
   const isEdit = !!event
   const [form, setForm] = useState<FormData>(EMPTY)
 
@@ -63,7 +64,10 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
       <div className="relative z-10 w-full max-w-lg rounded-xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <h3 className="text-lg font-semibold text-slate-900">
-            {isEdit ? '编辑日程' : '新增日程'}
+            {simplified
+              ? (isEdit ? '编辑排练' : '新增排练')
+              : (isEdit ? '编辑日程' : '新增日程')
+            }
           </h3>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
             <X className="h-5 w-5" />
@@ -71,47 +75,52 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
-          {/* 类型 */}
-          <div className="flex gap-3">
-            {(['演出', '排练'] as BandEventType[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => {
-                  update('type', t)
-                  if (t === '排练') {
-                    update('startTime', REHEARSAL_DEFAULTS.startTime)
-                    update('endTime', REHEARSAL_DEFAULTS.endTime)
-                    update('duration', REHEARSAL_DEFAULTS.duration)
-                  }
-                }}
-                className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                  form.type === t
-                    ? t === '演出'
-                      ? 'border-rose-300 bg-rose-50 text-rose-700'
-                      : 'border-blue-300 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                }`}
-              >
-                {t === '演出' ? '🎸 演出' : '🥁 排练'}
-              </button>
-            ))}
-          </div>
+          {/* 类型切换（简化模式隐藏） */}
+          {!simplified && (
+            <div className="flex gap-3">
+              {(['演出', '排练'] as BandEventType[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    update('type', t)
+                    if (t === '排练') {
+                      update('startTime', REHEARSAL_DEFAULTS.startTime)
+                      update('endTime', REHEARSAL_DEFAULTS.endTime)
+                      update('duration', REHEARSAL_DEFAULTS.duration)
+                    }
+                  }}
+                  className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    form.type === t
+                      ? t === '演出'
+                        ? 'border-rose-300 bg-rose-50 text-rose-700'
+                        : 'border-blue-300 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {t === '演出' ? '🎸 演出' : '🥁 排练'}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* 基本信息 */}
           <div className="grid gap-4">
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">
-                {form.type === '演出' ? '演出名称' : '排练主题'} <span className="text-red-400">*</span>
-              </span>
-              <input
-                type="text" required
-                value={form.title}
-                onChange={(e) => update('title', e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder={form.type === '演出' ? '如：夏日音乐节' : '如：新歌联排'}
-              />
-            </label>
+            {/* 标题（简化模式隐藏） */}
+            {!simplified && (
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-slate-700">
+                  {form.type === '演出' ? '演出名称' : '排练主题'} <span className="text-red-400">*</span>
+                </span>
+                <input
+                  type="text" required
+                  value={form.title}
+                  onChange={(e) => update('title', e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder={form.type === '演出' ? '如：夏日音乐节' : '如：新歌联排'}
+                />
+              </label>
+            )}
 
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">
@@ -190,7 +199,7 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
               取消
             </button>
             <button type="submit" className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-              {isEdit ? '保存修改' : '添加日程'}
+              {isEdit ? '保存修改' : simplified ? '添加排练' : '添加日程'}
             </button>
           </div>
         </form>

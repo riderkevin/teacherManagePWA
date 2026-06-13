@@ -1,33 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Loader2, CalendarDays, Edit3, Trash2, Music } from 'lucide-react'
-import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent, getBandEventSongs, setBandEventSongs, getAllBandSongs } from '../api'
-import type { BandEvent, BandSong, BandEventSong } from '../types'
+import { Plus, Search, Loader2, Edit3, Trash2 } from 'lucide-react'
+import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent } from '../api'
+import type { BandEvent } from '../types'
 import BandEventModal from '../components/BandEventModal'
 
 export default function BandRehearsals() {
   const [events, setEvents] = useState<BandEvent[] | null>(null)
-  const [songs, setSongs] = useState<BandSong[]>([])
-  const [eventSongs, setEventSongs] = useState<Record<number, BandEventSong[]>>({})
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<BandEvent | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BandEvent | null>(null)
-  const [setlistOpen, setSetlistOpen] = useState<number | null>(null)
-  const [selectedSongs, setSelectedSongs] = useState<number[]>([])
 
-  const load = () => {
-    getAllBandEvents().then(setEvents)
-    getAllBandSongs().then(setSongs)
-  }
+  const load = () => getAllBandEvents().then(setEvents)
   useEffect(() => { load() }, [])
-
-  // 加载曲目单
-  const loadSetlist = async (eventId: number) => {
-    const es = await getBandEventSongs(eventId)
-    setEventSongs((prev) => ({ ...prev, [eventId]: es }))
-    setSelectedSongs(es.map((e) => e.songId))
-    setSetlistOpen(eventId)
-  }
 
   const handleAdd = async (data: Omit<BandEvent, 'id'>) => {
     await addBandEvent(data)
@@ -49,21 +34,13 @@ export default function BandRehearsals() {
     load()
   }
 
-  const handleSaveSetlist = async () => {
-    if (setlistOpen === null) return
-    await setBandEventSongs(setlistOpen, selectedSongs)
-    const es = await getBandEventSongs(setlistOpen)
-    setEventSongs((prev) => ({ ...prev, [setlistOpen]: es }))
-    setSetlistOpen(null)
-  }
-
   // 只显示排练
   const rehearsals = events?.filter((e) => e.type === '排练') ?? []
 
   const filtered = rehearsals.filter((e) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return [e.title, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
+    return [e.date, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
   // 格式化日期：2026/5/21
@@ -115,7 +92,6 @@ export default function BandRehearsals() {
       {/* Empty */}
       {rehearsals.length === 0 && events !== null && (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <CalendarDays className="h-12 w-12 mb-3" />
           <p className="text-sm">暂无排练日程</p>
           <button onClick={() => { setEditing(null); setModalOpen(true) }} className="mt-3 text-sm text-blue-600 hover:text-blue-700">
             添加第一个排练
@@ -123,114 +99,48 @@ export default function BandRehearsals() {
         </div>
       )}
 
-      {/* Event list */}
+      {/* Plain list */}
       {filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map((event) => {
-            const setlist = eventSongs[event.id!]
-
-            return (
-              <div
-                key={event.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                        🥁 排练
-                      </span>
-                      <h4 className="font-semibold text-slate-900">{event.title}</h4>
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-medium text-slate-500">
+                <th className="px-5 py-3 w-28">日期</th>
+                <th className="px-5 py-3 w-32">时间</th>
+                <th className="px-5 py-3 w-20">时长</th>
+                <th className="px-5 py-3">地点</th>
+                <th className="px-5 py-3">备注</th>
+                <th className="px-5 py-3 w-20 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.map((event) => (
+                <tr key={event.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-5 py-3 text-slate-900 font-medium">{formatDate(event.date)}</td>
+                  <td className="px-5 py-3 text-slate-600">{event.startTime || '-'}-{event.endTime || '-'}</td>
+                  <td className="px-5 py-3 text-slate-600">{event.duration || 0}h</td>
+                  <td className="px-5 py-3 text-slate-600">{event.location || '-'}</td>
+                  <td className="px-5 py-3 text-slate-400 max-w-[200px] truncate">{event.notes || '-'}</td>
+                  <td className="px-5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => { setEditing(event); setModalOpen(true) }}
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(event)}
+                        className="rounded p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                    <div className="mt-2 space-y-1 text-sm text-slate-500">
-                      <div>排练日期：{formatDate(event.date)}</div>
-                      <div>排练时间：{event.startTime || '-'}-{event.endTime || '-'}</div>
-                      <div>排练时长：{event.duration || 0} 小时</div>
-                      {event.location && <div>排练地点：{event.location}</div>}
-                      {event.notes && <div>备注：{event.notes}</div>}
-                    </div>
-                    {/* 曲目单预览 */}
-                    {setlist && setlist.length > 0 && (
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        {setlist.map((es, idx) => (
-                          <span key={es.id} className="text-xs bg-slate-100 text-slate-500 rounded px-2 py-0.5">
-                            {idx + 1}. {es.songTitle}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 ml-2 shrink-0">
-                    {/* 曲目单按钮 */}
-                    <button
-                      onClick={() => loadSetlist(event.id!)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-purple-100 hover:text-purple-600 transition-colors"
-                      title="编辑曲目单"
-                    >
-                      <Music className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => { setEditing(event); setModalOpen(true) }}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(event)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Setlist Modal */}
-      {setlistOpen !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setSetlistOpen(null)} />
-          <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
-            <h4 className="text-lg font-semibold text-slate-900">编辑曲目单</h4>
-            <p className="text-sm text-slate-500 mt-1">勾选并排序排练曲目</p>
-            <div className="mt-4 space-y-1 max-h-60 overflow-y-auto">
-              {songs.map((song) => {
-                const checked = selectedSongs.includes(song.id!)
-                return (
-                  <label
-                    key={song.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                      checked ? 'bg-blue-50' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {
-                        setSelectedSongs((prev) =>
-                          checked ? prev.filter((id) => id !== song.id) : [...prev, song.id!]
-                        )
-                      }}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-700">{song.title}</span>
-                    {song.artist && <span className="text-xs text-slate-400">- {song.artist}</span>}
-                  </label>
-                )
-              })}
-            </div>
-            <div className="mt-5 flex justify-end gap-3">
-              <button onClick={() => setSetlistOpen(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                取消
-              </button>
-              <button onClick={handleSaveSetlist} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-                保存曲目单
-              </button>
-            </div>
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -239,6 +149,7 @@ export default function BandRehearsals() {
         <BandEventModal
           event={editing}
           defaultType="排练"
+          simplified
           onSave={(data) => { editing ? handleEdit(data) : handleAdd(data) }}
           onClose={() => { setModalOpen(false); setEditing(null) }}
         />
@@ -251,7 +162,7 @@ export default function BandRehearsals() {
           <div className="relative z-10 w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
             <h4 className="text-lg font-semibold text-slate-900">确认删除</h4>
             <p className="mt-2 text-sm text-slate-600">
-              确定要删除排练「{deleteTarget.title}」吗？关联的曲目单也会被删除，此操作不可撤销。
+              确定要删除 {formatDate(deleteTarget.date)} 的排练吗？此操作不可撤销。
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <button onClick={() => setDeleteTarget(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
