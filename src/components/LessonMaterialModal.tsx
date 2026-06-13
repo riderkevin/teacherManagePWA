@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, FileText, Upload, Link, Loader2, Cloud, CheckCircle, AlertCircle } from 'lucide-react'
+import { X, Plus, Trash2, FileText, Upload, Link, Loader2 } from 'lucide-react'
 import { getLessonMaterials, addLessonMaterial, deleteLessonMaterial, getAllMaterials } from '../api'
 import type { LessonMaterial, Material } from '../types'
-
-const BACKEND = 'http://localhost:3001'
 
 interface Props {
   lessonId: number
@@ -23,9 +21,6 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
   const [textContent, setTextContent] = useState('')
   const [uploadFileName, setUploadFileName] = useState('')
   const [uploadFileData, setUploadFileData] = useState('')
-  const [feishuLink, setFeishuLink] = useState('')
-  const [feishuUploading, setFeishuUploading] = useState(false)
-  const [feishuError, setFeishuError] = useState('')
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
@@ -72,7 +67,7 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
           text: uploadFileName,
           fileName: uploadFileName,
           fileData: uploadFileData,
-          fileLink: feishuLink,
+          fileLink: '',
         })
       } else {
         setSaving(false)
@@ -84,8 +79,6 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
       setTextContent('')
       setUploadFileName('')
       setUploadFileData('')
-      setFeishuLink('')
-      setFeishuError('')
       load()
     } finally {
       setSaving(false)
@@ -103,32 +96,9 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
     const file = e.target.files?.[0]
     if (!file) return
     setUploadFileName(file.name)
-    setFeishuLink('')
-    setFeishuError('')
     const reader = new FileReader()
     reader.onload = () => setUploadFileData(reader.result as string)
     reader.readAsDataURL(file)
-  }
-
-  // ── 上传到飞书 ──
-  const handleUploadToFeishu = async () => {
-    if (!uploadFileName || !uploadFileData) return
-    setFeishuUploading(true)
-    setFeishuError('')
-    try {
-      const res = await fetch(`${BACKEND}/api/upload/file`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: uploadFileName, fileData: uploadFileData }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || '上传失败')
-      setFeishuLink(json.url || '')
-    } catch (err: any) {
-      setFeishuError(err.message || '上传失败，请确认飞书桥接服务已启动')
-    } finally {
-      setFeishuUploading(false)
-    }
   }
 
   return (
@@ -270,43 +240,7 @@ export default function LessonMaterialModal({ lessonId, lessonTitle, onClose }: 
                   className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {uploadFileName && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500">已选择: {uploadFileName}</p>
-
-                    {/* 飞书上传 */}
-                    {feishuLink ? (
-                      <p className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 rounded-lg px-2 py-1">
-                        <CheckCircle className="h-3 w-3" />
-                        已上传到飞书，复制课件时将包含链接
-                      </p>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleUploadToFeishu}
-                        disabled={feishuUploading}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition-colors"
-                      >
-                        {feishuUploading ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            上传中…
-                          </>
-                        ) : (
-                          <>
-                            <Cloud className="h-3.5 w-3.5" />
-                            上传到飞书
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {feishuError && (
-                      <p className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {feishuError}
-                      </p>
-                    )}
-                  </div>
+                  <p className="text-xs text-slate-500">已选择: {uploadFileName}</p>
                 )}
               </div>
             )}

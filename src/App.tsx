@@ -6,7 +6,6 @@ import Calendar from './pages/Calendar'
 import Students from './pages/Students'
 import StudentDetail from './pages/StudentDetail'
 import Materials from './pages/Materials'
-import Sync from './pages/Sync'
 import BandPerformances from './pages/BandPerformances'
 import BandRehearsals from './pages/BandRehearsals'
 import BandSongs from './pages/BandSongs'
@@ -38,7 +37,6 @@ function AppGate() {
           <Route path="/students" element={<Students />} />
           <Route path="/students/:id" element={<StudentDetail />} />
           <Route path="/materials" element={<Materials />} />
-          <Route path="/sync" element={<Sync />} />
           <Route path="/band-performances" element={<BandPerformances />} />
           <Route path="/band-rehearsals" element={<BandRehearsals />} />
           <Route path="/band-songs" element={<BandSongs />} />

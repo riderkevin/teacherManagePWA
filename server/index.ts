@@ -1,11 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { setupBitableRoutes } from './routes/bitable'
-import { setupCalendarRoutes } from './routes/calendar'
-import { setupDocRoutes } from './routes/doc'
-import { setupSyncRoutes } from './routes/sync'
-import { setupUploadRoutes } from './routes/upload'
 import authRoutes from './routes/auth'
 import studentsRoutes from './routes/students'
 import lessonsRoutes from './routes/lessons'
@@ -28,13 +23,6 @@ app.use(express.json({ limit: '50mb' }))
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'Teacher API' })
 })
-
-// ── 飞书桥接路由 ──
-setupBitableRoutes(app)
-setupCalendarRoutes(app)
-setupDocRoutes(app)
-setupSyncRoutes(app)
-setupUploadRoutes(app)
 
 // ── 数据 API 路由 ──
 app.use('/api/auth', authRoutes)

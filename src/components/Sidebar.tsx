@@ -5,7 +5,6 @@ import {
   Users,
   FolderOpen,
   Music,
-  RefreshCw,
   LogOut,
   MicVocal,
   ListMusic,
@@ -14,12 +13,14 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const menuItems = [
+const dashboardItems = [
   { path: '/', label: '首页看板', icon: LayoutDashboard },
+]
+
+const studentItems = [
   { path: '/calendar', label: '上课日历', icon: CalendarDays },
   { path: '/students', label: '学生档案', icon: Users },
   { path: '/materials', label: '课件汇总', icon: FolderOpen },
-  { path: '/sync', label: '飞书同步', icon: RefreshCw },
 ]
 
 const bandItems = [
@@ -28,6 +29,30 @@ const bandItems = [
   { path: '/band-songs', label: '排练歌单', icon: ListMusic },
   { path: '/band-resources', label: '各类资料与网盘', icon: FolderArchive },
 ]
+
+function NavSection({ items }: { items: typeof dashboardItems }) {
+  return (
+    <>
+      {items.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          end={item.path === '/'}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-blue-500/25 text-white'
+                : 'text-blue-100/70 hover:bg-white/10 hover:text-white'
+            }`
+          }
+        >
+          <item.icon className="h-4.5 w-4.5" />
+          {item.label}
+        </NavLink>
+      ))}
+    </>
+  )
+}
 
 export default function Sidebar() {
   const { logout } = useAuth()
@@ -47,44 +72,19 @@ export default function Sidebar() {
 
       {/* 导航菜单 */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-500/25 text-white'
-                  : 'text-blue-100/70 hover:bg-white/10 hover:text-white'
-              }`
-            }
-          >
-            <item.icon className="h-4.5 w-4.5" />
-            {item.label}
-          </NavLink>
-        ))}
+        <NavSection items={dashboardItems} />
+
+        {/* 学生课程管理分组 */}
+        <div className="mt-4 mb-1 px-3">
+          <p className="text-xs font-semibold text-blue-200/50 uppercase tracking-wider">学生课程管理</p>
+        </div>
+        <NavSection items={studentItems} />
 
         {/* 乐队管理分组 */}
         <div className="mt-4 mb-1 px-3">
           <p className="text-xs font-semibold text-blue-200/50 uppercase tracking-wider">乐队管理</p>
         </div>
-        {bandItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-500/25 text-white'
-                  : 'text-blue-100/70 hover:bg-white/10 hover:text-white'
-              }`
-            }
-          >
-            <item.icon className="h-4.5 w-4.5" />
-            {item.label}
-          </NavLink>
-        ))}
+        <NavSection items={bandItems} />
       </nav>
 
       {/* 底部用户区 */}
