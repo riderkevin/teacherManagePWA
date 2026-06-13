@@ -43,10 +43,11 @@ export default function BandRehearsals() {
     return [e.date, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
-  // 格式化日期：2026/5/21
+  // 格式化日期：2026/5/21（兼容 YYYY/MM/DD 和 YYYY-MM-DD）
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('/')
+    const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-')
+    const [y, m, d] = parts
     return `${parseInt(y)}/${parseInt(m)}/${parseInt(d)}`
   }
 
