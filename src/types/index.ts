@@ -242,10 +242,10 @@ function buildTotalDisplay(lessons: Lesson[]): string {
 
 // ── 乐队网盘资源 ──
 
-export type CloudFileCategory = '乐谱' | '音频' | '文档' | '伴奏' | '其他'
+export type CloudFileCategory = '乐队资料' | '演出资料' | '其他'
 
 export const CLOUD_FILE_CATEGORIES: CloudFileCategory[] = [
-  '乐谱', '音频', '文档', '伴奏', '其他',
+  '乐队资料', '演出资料', '其他',
 ]
 
 export interface CloudFile {

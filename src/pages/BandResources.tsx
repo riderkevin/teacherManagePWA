@@ -6,10 +6,8 @@ import { CLOUD_FILE_CATEGORIES } from '../types'
 import BandResourceModal from '../components/BandResourceModal'
 
 const CAT_COLORS: Record<CloudFileCategory, string> = {
-  '乐谱': 'bg-amber-100 text-amber-700',
-  '音频': 'bg-violet-100 text-violet-700',
-  '文档': 'bg-blue-100 text-blue-700',
-  '伴奏': 'bg-emerald-100 text-emerald-700',
+  '乐队资料': 'bg-violet-100 text-violet-700',
+  '演出资料': 'bg-rose-100 text-rose-700',
   '其他': 'bg-slate-100 text-slate-600',
 }
 
@@ -165,7 +163,10 @@ export default function BandResources() {
                     </div>
                     <h4 className="font-semibold text-slate-900 truncate mt-1.5">{r.title}</h4>
                     {r.fileName && (
-                      <p className="text-xs text-slate-400 mt-0.5 truncate">{r.fileName}</p>
+                      <p className="text-xs text-slate-400 mt-0.5 truncate">📎 {r.fileName}</p>
+                    )}
+                    {r.fileLink && (
+                      <p className="text-xs text-blue-500 mt-0.5 truncate">🔗 {r.fileLink}</p>
                     )}
                     {r.notes && (
                       <p className="text-xs text-slate-400 mt-1 line-clamp-2">{r.notes}</p>

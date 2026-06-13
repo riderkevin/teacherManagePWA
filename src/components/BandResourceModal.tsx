@@ -8,7 +8,7 @@ type AddMode = 'upload' | 'link' | 'text'
 
 const EMPTY: FormData = {
   title: '',
-  category: '其他',
+  category: '乐队资料',
   fileName: '',
   fileData: '',
   fileLink: '',
@@ -109,8 +109,7 @@ export default function BandResourceModal({ resource, onSave, onClose }: Props) 
           </label>
 
           {/* 添加模式切换 */}
-          {!isEdit && (
-            <div className="flex gap-2">
+          <div className="flex gap-2">
               {([
                 { key: 'upload' as AddMode, label: '本地上传', icon: Upload },
                 { key: 'link' as AddMode, label: '外部链接', icon: Link },
@@ -137,7 +136,6 @@ export default function BandResourceModal({ resource, onSave, onClose }: Props) 
                 </button>
               ))}
             </div>
-          )}
 
           {/* 本地上传 */}
           {(mode === 'upload' || (isEdit && form.fileData)) && (

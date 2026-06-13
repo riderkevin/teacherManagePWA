@@ -170,7 +170,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cloud_files (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL DEFAULT '',
-    category TEXT NOT NULL DEFAULT '其他',
+    category TEXT NOT NULL DEFAULT '乐队资料',
     fileName TEXT NOT NULL DEFAULT '',
     fileData TEXT NOT NULL DEFAULT '',
     fileLink TEXT NOT NULL DEFAULT '',
