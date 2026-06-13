@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Loader2, Edit3, Trash2, Music, MapPin, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Search, Loader2, Edit3, Trash2, Music, MapPin, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent, getBandEventSongs, setBandEventSongs, getAllBandSongs } from '../api'
 import type { BandEvent, BandSong, BandEventSong } from '../types'
 import BandEventModal from '../components/BandEventModal'
@@ -203,13 +203,14 @@ export default function BandPerformances() {
                     <div className="text-sm">
                       <span className="text-slate-400">演出曲目：</span>
                       {setlist && setlist.length > 0 ? (
-                        <span className="text-slate-700">
+                        <div className="mt-1 space-y-0.5">
                           {setlist.map((es, idx) => (
-                            <span key={es.id}>
-                              {idx > 0 && '、'}{es.songTitle}
-                            </span>
+                            <div key={es.id} className="text-slate-700">
+                              {idx + 1}. {es.songTitle}
+                              {es.songArtist && <span className="text-slate-400"> - {es.songArtist}</span>}
+                            </div>
                           ))}
-                        </span>
+                        </div>
                       ) : (
                         <span className="text-slate-400">未设置</span>
                       )}
@@ -238,33 +239,85 @@ export default function BandPerformances() {
           <div className="fixed inset-0 bg-black/40" onClick={() => setSetlistOpen(null)} />
           <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
             <h4 className="text-lg font-semibold text-slate-900">编辑曲目单</h4>
-            <p className="text-sm text-slate-500 mt-1">勾选并排序演出曲目</p>
-            <div className="mt-4 space-y-1 max-h-60 overflow-y-auto">
-              {songs.map((song) => {
-                const checked = selectedSongs.includes(song.id!)
-                return (
-                  <label
-                    key={song.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                      checked ? 'bg-blue-50' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {
-                        setSelectedSongs((prev) =>
-                          checked ? prev.filter((id) => id !== song.id) : [...prev, song.id!]
-                        )
-                      }}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-700">{song.title}</span>
-                    {song.artist && <span className="text-xs text-slate-400">- {song.artist}</span>}
-                  </label>
-                )
-              })}
-            </div>
+            <p className="text-sm text-slate-500 mt-1">选择曲目并排序，上下箭头调整顺序</p>
+
+            {/* 已选曲目（可排序） */}
+            {selectedSongs.length > 0 && (
+              <div className="mt-4 space-y-1">
+                <p className="text-xs font-medium text-slate-400 mb-2">已选曲目</p>
+                {selectedSongs.map((songId, idx) => {
+                  const song = songs.find((s) => s.id === songId)
+                  if (!song) return null
+                  return (
+                    <div
+                      key={songId}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50"
+                    >
+                      <span className="text-xs text-blue-400 w-5">{idx + 1}.</span>
+                      <span className="text-sm text-slate-700 flex-1 truncate">{song.title}</span>
+                      {song.artist && <span className="text-xs text-slate-400 truncate">{song.artist}</span>}
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => {
+                          setSelectedSongs((prev) => {
+                            const next = [...prev]
+                            ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+                            return next
+                          })
+                        }}
+                        className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === selectedSongs.length - 1}
+                        onClick={() => {
+                          setSelectedSongs((prev) => {
+                            const next = [...prev]
+                            ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
+                            return next
+                          })
+                        }}
+                        className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSongs((prev) => prev.filter((id) => id !== songId))}
+                        className="p-0.5 text-slate-400 hover:text-red-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 可选曲目 */}
+            {selectedSongs.length < songs.length && (
+              <div className="mt-4 space-y-1 max-h-40 overflow-y-auto">
+                <p className="text-xs font-medium text-slate-400 mb-2">可选曲目</p>
+                {songs
+                  .filter((s) => !selectedSongs.includes(s.id!))
+                  .map((song) => (
+                    <button
+                      key={song.id}
+                      type="button"
+                      onClick={() => setSelectedSongs((prev) => [...prev, song.id!])}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-blue-500" />
+                      <span className="text-sm text-slate-700">{song.title}</span>
+                      {song.artist && <span className="text-xs text-slate-400">- {song.artist}</span>}
+                    </button>
+                  ))}
+              </div>
+            )}
+
             <div className="mt-5 flex justify-end gap-3">
               <button onClick={() => setSetlistOpen(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
                 取消
