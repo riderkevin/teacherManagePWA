@@ -66,15 +66,11 @@ export default function BandRehearsals() {
     return [e.title, e.location, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
-  // 格式化日期
+  // 格式化日期：2026/5/21
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
     const [y, m, d] = dateStr.split('/')
-    const month = parseInt(m)
-    const day = parseInt(d)
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-    const date = new Date(`${y}/${m}/${d}`)
-    return `${month}月${day}日 ${weekdays[date.getDay()]}`
+    return `${parseInt(y)}/${parseInt(m)}/${parseInt(d)}`
   }
 
   return (
@@ -146,16 +142,13 @@ export default function BandRehearsals() {
                       </span>
                       <h4 className="font-semibold text-slate-900">{event.title}</h4>
                     </div>
-                    <div className="flex items-center gap-3 mt-2 text-sm text-slate-500">
-                      <span>{formatDate(event.date)}</span>
-                      {event.startTime && (
-                        <span>{event.startTime}{event.endTime ? `-${event.endTime}` : ''}</span>
-                      )}
-                      {event.location && <span>📍 {event.location}</span>}
+                    <div className="mt-2 space-y-1 text-sm text-slate-500">
+                      <div>排练日期：{formatDate(event.date)}</div>
+                      <div>排练时间：{event.startTime || '-'}-{event.endTime || '-'}</div>
+                      <div>排练时长：{event.duration || 0} 小时</div>
+                      {event.location && <div>排练地点：{event.location}</div>}
+                      {event.notes && <div>备注：{event.notes}</div>}
                     </div>
-                    {event.notes && (
-                      <p className="text-sm text-slate-400 mt-1.5 line-clamp-2">{event.notes}</p>
-                    )}
                     {/* 曲目单预览 */}
                     {setlist && setlist.length > 0 && (
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">

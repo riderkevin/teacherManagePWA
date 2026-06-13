@@ -281,6 +281,7 @@ export interface BandEvent {
   date: string           // YYYY/MM/DD
   startTime: string      // HH:MM
   endTime: string        // HH:MM
+  duration: number       // 时长（小时）
   location: string
   notes: string
   createdAt: string

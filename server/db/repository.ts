@@ -677,6 +677,7 @@ export interface BandEvent {
   date: string           // YYYY/MM/DD
   startTime: string      // HH:MM
   endTime: string        // HH:MM
+  duration: number       // 时长（小时）
   location: string
   notes: string
   createdAt: string
@@ -706,8 +707,8 @@ export function getAllBandEvents(): BandEvent[] {
 
 export function addBandEvent(event: Omit<BandEvent, 'id'>): number {
   const stmt = db.prepare(`
-    INSERT INTO band_events (type, title, date, startTime, endTime, location, notes, createdAt)
-    VALUES (@type, @title, @date, @startTime, @endTime, @location, @notes, @createdAt)
+    INSERT INTO band_events (type, title, date, startTime, endTime, duration, location, notes, createdAt)
+    VALUES (@type, @title, @date, @startTime, @endTime, @duration, @location, @notes, @createdAt)
   `)
   return Number(stmt.run(event).lastInsertRowid)
 }

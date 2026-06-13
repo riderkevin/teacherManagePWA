@@ -132,6 +132,7 @@ db.exec(`
     date TEXT NOT NULL DEFAULT '',
     startTime TEXT NOT NULL DEFAULT '',
     endTime TEXT NOT NULL DEFAULT '',
+    duration REAL NOT NULL DEFAULT 2,
     location TEXT NOT NULL DEFAULT '',
     notes TEXT NOT NULL DEFAULT '',
     createdAt TEXT NOT NULL DEFAULT ''
@@ -179,4 +180,10 @@ db.exec(`
     FOREIGN KEY (songId) REFERENCES band_songs(id) ON DELETE CASCADE
   );
 `)
+
+// ── 运行时迁移：为已有数据库添加新列 ──
+try {
+  db.exec(`ALTER TABLE band_events ADD COLUMN duration REAL NOT NULL DEFAULT 2`)
+} catch { /* 列已存在则忽略 */ }
+
 export default db

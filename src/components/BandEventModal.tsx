@@ -8,11 +8,19 @@ const EMPTY: FormData = {
   type: '排练',
   title: '',
   date: '',
-  startTime: '',
-  endTime: '',
+  startTime: '20:00',
+  endTime: '22:00',
+  duration: 2,
   location: '',
   notes: '',
   createdAt: new Date().toISOString(),
+}
+
+// 排练默认值
+const REHEARSAL_DEFAULTS = {
+  startTime: '20:00',
+  endTime: '22:00',
+  duration: 2,
 }
 
 interface Props {
@@ -31,7 +39,13 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
       const { id, ...data } = event
       setForm(data)
     } else {
-      setForm({ ...EMPTY, type: defaultType || '排练', createdAt: new Date().toISOString() })
+      const type = defaultType || '排练'
+      setForm({
+        ...EMPTY,
+        type,
+        ...(type === '排练' ? REHEARSAL_DEFAULTS : { startTime: '', endTime: '', duration: 0 }),
+        createdAt: new Date().toISOString(),
+      })
     }
   }, [event, defaultType])
 
@@ -63,7 +77,14 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
               <button
                 key={t}
                 type="button"
-                onClick={() => update('type', t)}
+                onClick={() => {
+                  update('type', t)
+                  if (t === '排练') {
+                    update('startTime', REHEARSAL_DEFAULTS.startTime)
+                    update('endTime', REHEARSAL_DEFAULTS.endTime)
+                    update('duration', REHEARSAL_DEFAULTS.duration)
+                  }
+                }}
                 className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                   form.type === t
                     ? t === '演出'
@@ -124,6 +145,22 @@ export default function BandEventModal({ event, defaultType, onSave, onClose }: 
                 />
               </label>
             </div>
+
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">
+                时长（小时） <span className="text-red-400">*</span>
+              </span>
+              <input
+                type="number"
+                required
+                min="0"
+                step="any"
+                value={form.duration}
+                onChange={(e) => update('duration', Number(e.target.value))}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="如：2"
+              />
+            </label>
 
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">地点</span>
