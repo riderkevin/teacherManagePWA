@@ -354,7 +354,7 @@ export function getTotalIncome(): number {
   return rows.reduce((sum, p) => sum + (p.amount || 0), 0)
 }
 
-/** 本月新增学生：firstTrialDate 在本月 */
+/** 本月新增学生：firstTrialDate 在本月（兼容 YYYY-MM-DD 和 YYYY/MM/DD） */
 export function getNewStudentsThisMonth(): number {
   const now = new Date()
   const firstStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/01`
@@ -362,7 +362,7 @@ export function getNewStudentsThisMonth(): number {
   const lastStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}￿`
 
   const row = db.prepare(
-    "SELECT COUNT(*) as count FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ?"
+    "SELECT COUNT(*) as count FROM students WHERE REPLACE(firstTrialDate, '-', '/') >= ? AND REPLACE(firstTrialDate, '-', '/') <= ?"
   ).get(firstStr, lastStr) as any
   return row?.count || 0
 }
@@ -375,7 +375,7 @@ export function getNewFormalStudentsThisMonth(): number {
   const lastStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}￿`
 
   const row = db.prepare(
-    "SELECT COUNT(*) as count FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ? AND status IN ('正式课多节一付', '正式课单节一付')"
+    "SELECT COUNT(*) as count FROM students WHERE REPLACE(firstTrialDate, '-', '/') >= ? AND REPLACE(firstTrialDate, '-', '/') <= ? AND status IN ('正式课多节一付', '正式课单节一付')"
   ).get(firstStr, lastStr) as any
   return row?.count || 0
 }
@@ -388,7 +388,7 @@ export function getNewTrialStudentsThisMonth(): number {
   const lastStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}￿`
 
   const row = db.prepare(
-    "SELECT COUNT(*) as count FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ? AND status = '仅上试听课'"
+    "SELECT COUNT(*) as count FROM students WHERE REPLACE(firstTrialDate, '-', '/') >= ? AND REPLACE(firstTrialDate, '-', '/') <= ? AND status = '仅上试听课'"
   ).get(firstStr, lastStr) as any
   return row?.count || 0
 }
@@ -403,7 +403,7 @@ export function getRenewalStudentsThisMonth(): number {
   // 本月有缴费的学生
   const paymentStudentIds = new Set(
     (db.prepare(
-      "SELECT DISTINCT studentId FROM payments WHERE date >= ? AND date <= ?"
+      "SELECT DISTINCT studentId FROM payments WHERE REPLACE(date, '-', '/') >= ? AND REPLACE(date, '-', '/') <= ?"
     ).all(firstStr, lastStr) as any[]).map((r: any) => r.studentId)
   )
 
@@ -412,7 +412,7 @@ export function getRenewalStudentsThisMonth(): number {
   // 排除 firstTrialDate 在本月的（新学生）
   const newStudentIds = new Set(
     (db.prepare(
-      "SELECT id FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ?"
+      "SELECT id FROM students WHERE REPLACE(firstTrialDate, '-', '/') >= ? AND REPLACE(firstTrialDate, '-', '/') <= ?"
     ).all(firstStr, lastStr) as any[]).map((r: any) => r.id)
   )
 
