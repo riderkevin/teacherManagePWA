@@ -268,13 +268,32 @@ export default function Dashboard() {
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">学生统计</p>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <StatCard
-            title="本月新增学生"
-            value={summary?.newStudents ?? '-'}
-            subtitle="首节试听在本月"
-            icon={UserPlus}
-            color="green"
-          />
+          {/* 本月新增学生：双数字展示 */}
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <p className="text-sm text-slate-500">本月新增学生</p>
+                <div className="flex items-baseline gap-3">
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {summary?.newFormal ?? '-'}
+                    </p>
+                    <p className="text-xs text-slate-400">正式课学生</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-300">/</p>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {summary?.newTrial ?? '-'}
+                    </p>
+                    <p className="text-xs text-slate-400">试听课学生</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg p-2 bg-emerald-50 flex-shrink-0">
+                <UserPlus className="h-5 w-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
           <StatCard
             title="本月续费学生"
             value={summary?.renewalStudents ?? '-'}

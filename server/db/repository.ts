@@ -367,6 +367,32 @@ export function getNewStudentsThisMonth(): number {
   return row?.count || 0
 }
 
+/** 本月新增正式学生：firstTrialDate 在本月 且 status 为正式课 */
+export function getNewFormalStudentsThisMonth(): number {
+  const now = new Date()
+  const firstStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/01`
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const lastStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}￿`
+
+  const row = db.prepare(
+    "SELECT COUNT(*) as count FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ? AND status IN ('正式课多节一付', '正式课单节一付')"
+  ).get(firstStr, lastStr) as any
+  return row?.count || 0
+}
+
+/** 本月新增试听学生：firstTrialDate 在本月 且 status 为 仅上试听课 */
+export function getNewTrialStudentsThisMonth(): number {
+  const now = new Date()
+  const firstStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/01`
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const lastStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(lastDay).padStart(2, '0')}￿`
+
+  const row = db.prepare(
+    "SELECT COUNT(*) as count FROM students WHERE firstTrialDate >= ? AND firstTrialDate <= ? AND status = '仅上试听课'"
+  ).get(firstStr, lastStr) as any
+  return row?.count || 0
+}
+
 /** 本月续费学生：本月有缴费 且 firstTrialDate 早于本月（非新学生） */
 export function getRenewalStudentsThisMonth(): number {
   const now = new Date()

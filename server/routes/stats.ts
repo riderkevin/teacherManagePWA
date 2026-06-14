@@ -28,7 +28,9 @@ router.get('/summary', (_req: Request, res: Response) => {
   const renewalStudents = repo.getRenewalStudentsThisMonth()
   const formalCount = repo.getFormalStudentCount()
   const trialCount = repo.getTrialStudentCount()
-  res.json({ yearIncome, totalIncome, newStudents, renewalStudents, formalCount, trialCount })
+  const newFormal = repo.getNewFormalStudentsThisMonth()
+  const newTrial = repo.getNewTrialStudentsThisMonth()
+  res.json({ yearIncome, totalIncome, newStudents, renewalStudents, formalCount, trialCount, newFormal, newTrial })
 })
 
 // 导出所有数据

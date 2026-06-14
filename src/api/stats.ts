@@ -27,6 +27,8 @@ export interface DashboardSummary {
   renewalStudents: number
   formalCount: number
   trialCount: number
+  newFormal: number
+  newTrial: number
 }
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
