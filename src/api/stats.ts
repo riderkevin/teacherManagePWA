@@ -20,6 +20,18 @@ export async function getThisMonthIncome(): Promise<number> {
   return result.income
 }
 
+export interface DashboardSummary {
+  yearIncome: number
+  totalIncome: number
+  newStudents: number
+  renewalStudents: number
+  formalCount: number
+}
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  return request<DashboardSummary>('/api/stats/summary')
+}
+
 export async function exportAllData(): Promise<any> {
   return request('/api/stats/export')
 }

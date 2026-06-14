@@ -48,9 +48,11 @@ export {
   getThisMonthStats,
   getThisWeekIncome,
   getThisMonthIncome,
+  getDashboardSummary,
   exportAllData,
   importAllData,
 } from './stats'
+export type { DashboardSummary } from './stats'
 
 export {
   checkFirstTime,

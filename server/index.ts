@@ -12,6 +12,7 @@ import seedRoutes from './routes/seed'
 import wxRoutes from './routes/wx'
 import bandRoutes from './routes/band'
 import cloudFilesRoutes from './routes/cloudFiles'
+import wxBandRoutes from './routes/wxBand'
 
 const app = express()
 const PORT = 3001
@@ -36,6 +37,7 @@ app.use('/api/seed', seedRoutes)
 app.use('/api/wx', wxRoutes)
 app.use('/api/band', bandRoutes)
 app.use('/api/cloud-files', cloudFilesRoutes)
+app.use('/api/wx-band', wxBandRoutes)
 
 // ── 生产环境：托管前端静态文件 ──
 import path from 'path'

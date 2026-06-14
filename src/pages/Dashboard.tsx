@@ -13,18 +13,21 @@ import {
   AlertTriangle,
   CheckCircle,
   Database,
+  TrendingUp,
+  UserPlus,
+  RefreshCw,
 } from 'lucide-react'
 import StatCard from '../components/StatCard'
 import {
-  getAllStudents,
   getUpcomingLessons,
   getThisWeekStats,
   getThisMonthStats,
-  getThisWeekIncome,
   getThisMonthIncome,
+  getDashboardSummary,
   exportAllData,
   importAllData,
 } from '../api'
+import type { DashboardSummary } from '../api'
 import { resetToSeedData } from '../api/seed'
 import type { Lesson } from '../types'
 
@@ -56,11 +59,10 @@ function getDateLabel(dateStr: string): string {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [upcomingLessons, setUpcomingLessons] = useState<Lesson[] | null>(null)
-  const [studentCount, setStudentCount] = useState<number | null>(null)
   const [weekStats, setWeekStats] = useState<number | null>(null)
   const [monthStats, setMonthStats] = useState<number | null>(null)
-  const [weekIncome, setWeekIncome] = useState<number | null>(null)
   const [monthIncome, setMonthIncome] = useState<number | null>(null)
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
 
   // 导入导出状态
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -70,11 +72,10 @@ export default function Dashboard() {
 
   const load = () => {
     getUpcomingLessons(3).then(setUpcomingLessons)
-    getAllStudents().then((list) => setStudentCount(list.length))
     getThisWeekStats().then(setWeekStats)
     getThisMonthStats().then(setMonthStats)
-    getThisWeekIncome().then(setWeekIncome)
     getThisMonthIncome().then(setMonthIncome)
+    getDashboardSummary().then(setSummary)
   }
 
   useEffect(() => {
@@ -83,11 +84,10 @@ export default function Dashboard() {
 
   const isLoading =
     upcomingLessons === null ||
-    studentCount === null ||
     weekStats === null ||
     monthStats === null ||
-    weekIncome === null ||
-    monthIncome === null
+    monthIncome === null ||
+    summary === null
 
   // 按日期分组课程
   const groupedByDate =
@@ -207,52 +207,90 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* 统计卡片行 */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          title="最近3天课程"
-          value={upcomingLessons?.length ?? '-'}
-          subtitle="待上课"
-          icon={BookOpen}
-          color="blue"
-          onClick={() => navigate('/calendar')}
-        />
-        <StatCard
-          title="本周课时"
-          value={weekStats != null ? `${weekStats} 课时` : '-'}
-          subtitle="已完成"
-          icon={CalendarDays}
-          color="green"
-        />
-        <StatCard
-          title="本月课时"
-          value={monthStats != null ? `${monthStats} 课时` : '-'}
-          subtitle="已完成"
-          icon={CalendarDays}
-          color="blue"
-        />
-        <StatCard
-          title="本周收入"
-          value={weekIncome != null ? `¥${weekIncome}` : '-'}
-          subtitle="缴费记录"
-          icon={DollarSign}
-          color="green"
-        />
-        <StatCard
-          title="本月收入"
-          value={monthIncome != null ? `¥${monthIncome}` : '-'}
-          subtitle="缴费记录"
-          icon={DollarSign}
-          color="blue"
-        />
-        <StatCard
-          title="学生总数"
-          value={studentCount ?? '-'}
-          subtitle="在读学生"
-          icon={Users}
-          color="blue"
-          onClick={() => navigate('/students')}
-        />
+      {/* 统计卡片行 — 第一行 */}
+      <div>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">课程概览</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <StatCard
+            title="最近3天课程"
+            value={upcomingLessons?.length ?? '-'}
+            subtitle="待上课"
+            icon={BookOpen}
+            color="blue"
+            onClick={() => navigate('/calendar')}
+          />
+          <StatCard
+            title="本周课时"
+            value={weekStats != null ? `${weekStats} 课时` : '-'}
+            subtitle="已完成"
+            icon={CalendarDays}
+            color="green"
+          />
+          <StatCard
+            title="本月课时"
+            value={monthStats != null ? `${monthStats} 课时` : '-'}
+            subtitle="已完成"
+            icon={CalendarDays}
+            color="blue"
+          />
+        </div>
+      </div>
+
+      {/* 统计卡片行 — 第二行：收入 */}
+      <div>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">收入统计</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <StatCard
+            title="本月收入"
+            value={monthIncome != null ? `¥${monthIncome}` : '-'}
+            subtitle="缴费记录"
+            icon={DollarSign}
+            color="blue"
+          />
+          <StatCard
+            title="今年收入"
+            value={summary != null ? `¥${summary.yearIncome}` : '-'}
+            subtitle="年度累计"
+            icon={TrendingUp}
+            color="green"
+          />
+          <StatCard
+            title="累计总收入"
+            value={summary != null ? `¥${summary.totalIncome}` : '-'}
+            subtitle="全部缴费记录"
+            icon={DollarSign}
+            color="amber"
+          />
+        </div>
+      </div>
+
+      {/* 统计卡片行 — 第三行：学生 */}
+      <div>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">学生统计</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <StatCard
+            title="本月新增学生"
+            value={summary?.newStudents ?? '-'}
+            subtitle="首节试听在本月"
+            icon={UserPlus}
+            color="green"
+          />
+          <StatCard
+            title="本月续费学生"
+            value={summary?.renewalStudents ?? '-'}
+            subtitle="本月缴费的老生"
+            icon={RefreshCw}
+            color="amber"
+          />
+          <StatCard
+            title="在读正式学生"
+            value={summary?.formalCount ?? '-'}
+            subtitle="已付正式课学费"
+            icon={Users}
+            color="blue"
+            onClick={() => navigate('/students')}
+          />
+        </div>
       </div>
 
       {/* 加载中 */}

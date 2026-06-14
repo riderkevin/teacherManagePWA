@@ -20,6 +20,16 @@ router.get('/month', (_req: Request, res: Response) => {
   res.json({ lessons, income })
 })
 
+// 年度 + 累计统计
+router.get('/summary', (_req: Request, res: Response) => {
+  const yearIncome = repo.getThisYearIncome()
+  const totalIncome = repo.getTotalIncome()
+  const newStudents = repo.getNewStudentsThisMonth()
+  const renewalStudents = repo.getRenewalStudentsThisMonth()
+  const formalCount = repo.getFormalStudentCount()
+  res.json({ yearIncome, totalIncome, newStudents, renewalStudents, formalCount })
+})
+
 // 导出所有数据
 router.get('/export', (_req: Request, res: Response) => {
   const data = repo.exportAllData()
