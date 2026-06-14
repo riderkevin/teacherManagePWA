@@ -198,7 +198,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-5">
       {/* 顶部欢迎区 */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900">首页看板</h2>
@@ -210,7 +210,7 @@ export default function Dashboard() {
       {/* 统计卡片行 — 第一行 */}
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">课程概览</p>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             title="最近3天课程"
             value={upcomingLessons?.length ?? '-'}
@@ -239,7 +239,7 @@ export default function Dashboard() {
       {/* 统计卡片行 — 第二行：收入 */}
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">收入统计</p>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             title="本月收入"
             value={monthIncome != null ? `¥${monthIncome}` : '-'}
@@ -267,7 +267,7 @@ export default function Dashboard() {
       {/* 统计卡片行 — 第三行：学生 */}
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">学生统计</p>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             title="本月新增学生"
             value={summary?.newStudents ?? '-'}
@@ -282,14 +282,35 @@ export default function Dashboard() {
             icon={RefreshCw}
             color="amber"
           />
-          <StatCard
-            title="在读正式学生"
-            value={summary?.formalCount ?? '-'}
-            subtitle="已付正式课学费"
-            icon={Users}
-            color="blue"
+          {/* 学生总数：自定义双数字展示 */}
+          <div
             onClick={() => navigate('/students')}
-          />
+            className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm cursor-pointer hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="flex items-start justify-between">
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <p className="text-sm text-slate-500">学生总数</p>
+                <div className="flex items-baseline gap-3">
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {summary?.formalCount ?? '-'}
+                    </p>
+                    <p className="text-xs text-slate-400">正式课学生</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-300">/</p>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {summary?.trialCount ?? '-'}
+                    </p>
+                    <p className="text-xs text-slate-400">试听课学生</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg p-2 bg-blue-50 flex-shrink-0">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

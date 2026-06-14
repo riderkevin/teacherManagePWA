@@ -22,17 +22,17 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = '
   return (
     <div
       onClick={onClick}
-      className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${
+      className={`rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm ${
         onClick ? 'cursor-pointer hover:shadow-md hover:border-slate-300 transition-all' : ''
       }`}
     >
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
+        <div className="space-y-0.5 min-w-0">
           <p className="text-sm text-slate-500">{title}</p>
-          <p className="text-3xl font-bold text-slate-900">{value}</p>
+          <p className="text-2xl font-bold text-slate-900">{value}</p>
           {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
         </div>
-        <div className={`rounded-lg p-2.5 ${c.bg}`}>
+        <div className={`rounded-lg p-2 ${c.bg} flex-shrink-0`}>
           <Icon className={`h-5 w-5 ${c.icon}`} />
         </div>
       </div>

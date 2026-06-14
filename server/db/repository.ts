@@ -405,6 +405,14 @@ export function getFormalStudentCount(): number {
   return row?.count || 0
 }
 
+/** 仅试听课学生：status 为 仅上试听课 */
+export function getTrialStudentCount(): number {
+  const row = db.prepare(
+    "SELECT COUNT(*) as count FROM students WHERE status = '仅上试听课'"
+  ).get() as any
+  return row?.count || 0
+}
+
 // ═══════════════════════════════════════════
 // 课件相关
 // ═══════════════════════════════════════════
