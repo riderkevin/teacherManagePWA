@@ -21,11 +21,13 @@ const EMPTY: FormData = {
 
 interface Props {
   song?: BandSong | null
+  existingArtists?: string[]
+  existingIps?: string[]
   onSave: (data: FormData) => void
   onClose: () => void
 }
 
-export default function BandSongModal({ song, onSave, onClose }: Props) {
+export default function BandSongModal({ song, existingArtists = [], existingIps = [], onSave, onClose }: Props) {
   const isEdit = !!song
   const [form, setForm] = useState<FormData>(EMPTY)
   const [uploading, setUploading] = useState(false)
@@ -96,11 +98,19 @@ export default function BandSongModal({ song, onSave, onClose }: Props) {
               <span className="text-sm font-medium text-slate-700">歌手</span>
               <input
                 type="text"
+                list="artist-list"
                 value={form.artist}
                 onChange={(e) => update('artist', e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="如：Eagles"
+                placeholder="输入或选择已有歌手"
               />
+              {existingArtists.length > 0 && (
+                <datalist id="artist-list">
+                  {existingArtists.map((a) => (
+                    <option key={a} value={a} />
+                  ))}
+                </datalist>
+              )}
             </label>
 
             {/* 所属IP */}
@@ -108,11 +118,19 @@ export default function BandSongModal({ song, onSave, onClose }: Props) {
               <span className="text-sm font-medium text-slate-700">所属IP</span>
               <input
                 type="text"
+                list="ip-list"
                 value={form.ip}
                 onChange={(e) => update('ip', e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="如：灌篮高手"
+                placeholder="输入或选择已有IP"
               />
+              {existingIps.length > 0 && (
+                <datalist id="ip-list">
+                  {existingIps.map((ip) => (
+                    <option key={ip} value={ip} />
+                  ))}
+                </datalist>
+              )}
             </label>
 
             {/* 歌曲版本 */}

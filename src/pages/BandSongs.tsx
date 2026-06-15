@@ -14,6 +14,17 @@ export default function BandSongs() {
   const [editing, setEditing] = useState<BandSong | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BandSong | null>(null)
 
+  // 从已有曲目提取唯一的歌手和IP，供新增时选择
+  const existingArtists = useMemo(() => {
+    if (!songs) return []
+    return [...new Set(songs.map((s) => s.artist).filter(Boolean))].sort()
+  }, [songs])
+
+  const existingIps = useMemo(() => {
+    if (!songs) return []
+    return [...new Set(songs.map((s) => s.ip).filter(Boolean))].sort()
+  }, [songs])
+
   const load = () => getAllBandSongs().then(setSongs)
   useEffect(() => { load() }, [])
 
@@ -302,6 +313,8 @@ export default function BandSongs() {
       {modalOpen && (
         <BandSongModal
           song={editing}
+          existingArtists={existingArtists}
+          existingIps={existingIps}
           onSave={(data) => { editing ? handleEdit(data) : handleAdd(data) }}
           onClose={() => { setModalOpen(false); setEditing(null) }}
         />
