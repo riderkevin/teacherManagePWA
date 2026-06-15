@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Loader2, Edit3, Trash2, Music, MapPin, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Plus, Search, Loader2, Edit3, Trash2, Music, MapPin, X, ChevronUp, ChevronDown } from 'lucide-react'
 import { getAllBandEvents, addBandEvent, updateBandEvent, deleteBandEvent, getBandEventSongs, setBandEventSongs, getAllBandSongs } from '../api'
 import type { BandEvent, BandSong, BandEventSong } from '../types'
 import BandEventModal from '../components/BandEventModal'
@@ -14,11 +14,23 @@ export default function BandPerformances() {
   const [deleteTarget, setDeleteTarget] = useState<BandEvent | null>(null)
   const [setlistOpen, setSetlistOpen] = useState<number | null>(null)
   const [selectedSongs, setSelectedSongs] = useState<number[]>([])
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
-  const load = () => {
-    getAllBandEvents().then(setEvents)
-    getAllBandSongs().then(setSongs)
+  const load = async () => {
+    const evts = await getAllBandEvents()
+    setEvents(evts)
+    const allSongs = await getAllBandSongs()
+    setSongs(allSongs)
+
+    // 加载所有演出的曲目单
+    const performances = evts.filter((e) => e.type === '演出')
+    const esMap: Record<number, BandEventSong[]> = {}
+    await Promise.all(
+      performances.map(async (p) => {
+        const es = await getBandEventSongs(p.id!)
+        esMap[p.id!] = es
+      })
+    )
+    setEventSongs(esMap)
   }
   useEffect(() => { load() }, [])
 
@@ -27,15 +39,6 @@ export default function BandPerformances() {
     setEventSongs((prev) => ({ ...prev, [eventId]: es }))
     setSelectedSongs(es.map((e) => e.songId))
     setSetlistOpen(eventId)
-  }
-
-  const toggleExpand = (id: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
   }
 
   const handleAdd = async (data: Omit<BandEvent, 'id'>) => {
@@ -77,7 +80,6 @@ export default function BandPerformances() {
     return [e.title, e.location, e.address, e.notes].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
-  // 格式化日期：2026/8/14
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
     const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-')
@@ -134,34 +136,30 @@ export default function BandPerformances() {
         </div>
       )}
 
-      {/* Performance list */}
+      {/* Performance list — 歌单直接展示在外部 */}
       {filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((event) => {
             const setlist = eventSongs[event.id!]
-            const isExpanded = expanded.has(event.id!)
 
             return (
               <div
                 key={event.id}
                 className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
               >
-                {/* 一级信息 */}
+                {/* 一级信息：日期-名称 + 地点/地址 */}
                 <div className="flex items-start justify-between p-4">
                   <div className="flex-1 min-w-0">
-                    {/* 日期-演出名称 */}
                     <h4 className="font-semibold text-slate-900">
                       {formatDate(event.date)} {event.title}
                     </h4>
                     <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500">
-                      {/* 演出地点 */}
                       {event.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3.5 w-3.5 text-slate-400" />
                           {event.location}
                         </span>
                       )}
-                      {/* 演出地址 */}
                       {event.address && (
                         <span className="text-slate-400 truncate max-w-[200px]">{event.address}</span>
                       )}
@@ -187,46 +185,38 @@ export default function BandPerformances() {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => toggleExpand(event.id!)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
-                    >
-                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    </button>
                   </div>
                 </div>
 
-                {/* 二级信息（可折叠） */}
-                {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2">
-                    {/* 演出曲目 */}
-                    <div className="text-sm">
-                      <span className="text-slate-400">演出曲目：</span>
-                      {setlist && setlist.length > 0 ? (
-                        <div className="mt-1 space-y-0.5">
-                          {setlist.map((es, idx) => (
-                            <div key={es.id} className="text-slate-700">
-                              {idx + 1}. {es.songTitle}
-                              {es.songArtist && <span className="text-slate-400"> - {es.songArtist}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">未设置</span>
-                      )}
-                    </div>
-                    {/* 演出语言 */}
-                    <div className="text-sm">
-                      <span className="text-slate-400">演出语言：</span>
-                      <span className="text-slate-700">{event.language || '日文'}</span>
-                    </div>
-                    {/* 备注 */}
-                    <div className="text-sm">
-                      <span className="text-slate-400">备注：</span>
-                      <span className="text-slate-700">{event.notes || '-'}</span>
-                    </div>
+                {/* 二级信息：曲目单 + 语言 + 备注 — 始终展示 */}
+                <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2">
+                  {/* 演出曲目 */}
+                  <div className="text-sm">
+                    <span className="text-slate-400">演出曲目：</span>
+                    {setlist && setlist.length > 0 ? (
+                      <div className="mt-1 space-y-0.5">
+                        {setlist.map((es, idx) => (
+                          <div key={es.id} className="text-slate-700">
+                            {idx + 1}. {es.songTitle}
+                            {es.songArtist && <span className="text-slate-400"> - {es.songArtist}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">未设置</span>
+                    )}
                   </div>
-                )}
+                  {/* 演出语言 */}
+                  <div className="text-sm">
+                    <span className="text-slate-400">演出语言：</span>
+                    <span className="text-slate-700">{event.language || '日文'}</span>
+                  </div>
+                  {/* 备注 */}
+                  <div className="text-sm">
+                    <span className="text-slate-400">备注：</span>
+                    <span className="text-slate-700">{event.notes || '-'}</span>
+                  </div>
+                </div>
               </div>
             )
           })}
@@ -241,7 +231,6 @@ export default function BandPerformances() {
             <h4 className="text-lg font-semibold text-slate-900">编辑曲目单</h4>
             <p className="text-sm text-slate-500 mt-1">选择曲目并排序，上下箭头调整顺序</p>
 
-            {/* 已选曲目（可排序） */}
             {selectedSongs.length > 0 && (
               <div className="mt-4 space-y-1">
                 <p className="text-xs font-medium text-slate-400 mb-2">已选曲目</p>
@@ -297,7 +286,6 @@ export default function BandPerformances() {
               </div>
             )}
 
-            {/* 可选曲目 */}
             {selectedSongs.length < songs.length && (
               <div className="mt-4 space-y-1 max-h-40 overflow-y-auto">
                 <p className="text-xs font-medium text-slate-400 mb-2">可选曲目</p>
