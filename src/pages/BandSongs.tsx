@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Plus, Search, Loader2, Music, Edit3, Trash2, FileText, Filter } from 'lucide-react'
 import { getAllBandSongs, addBandSong, updateBandSong, deleteBandSong } from '../api'
-import type { BandSong, SongVersion, SongArrangement } from '../types'
+import type { BandSong } from '../types'
 import { SONG_VERSIONS, SONG_ARRANGEMENTS } from '../types'
 import BandSongModal from '../components/BandSongModal'
 
